@@ -32,7 +32,9 @@ static void assign_section_paths(ListContext& list, const freya::String& asset_s
   // Iterate through the directory to add all of the paths
 
   freya::FilePath full_path = freya::filepath_append(list.parent_dir, section.directory);
-  freya::filesystem_directory_recurse_iterate(full_path, [&](const freya::FilePath& base_dir, const freya::FilePath& current_path, void* user_data){
+  freya::filesystem_directory_iterate(full_path, [&](const freya::FilePath& base_dir, 
+                                                     const freya::FilePath& current_path, 
+                                                     void* user_data) {
     section.assets.emplace_back(current_path);
     return true;
   });

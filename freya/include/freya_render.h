@@ -114,12 +114,6 @@ struct RendererDefaults {
 ///---------------------------------------------------------------------------------------------------------------------
 /// Camera functions
 
-/// A function to mimick a free-form camera movement.
-FREYA_API void camera_free_move_func(Camera& camera);
-
-/// A function to mimick a first-person shooter camera movement.
-FREYA_API void camera_fps_move_func(Camera& camera);
-
 /// Fill the information in `out_cam` using the given `CameraDesc`.
 FREYA_API void camera_create(Camera& out_cam, const CameraDesc& desc);
 

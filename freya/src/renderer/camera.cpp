@@ -7,14 +7,6 @@
 namespace freya { // Start of freya
 
 /// ----------------------------------------------------------------------
-/// Camera consts
-
-const f32 CAMERA_SPEED = 20.0f;
-
-/// Camera consts
-/// ----------------------------------------------------------------------
-
-/// ----------------------------------------------------------------------
 /// Callbacks
 
 static bool window_resize_callback(const Event& event, const void* dispatcher, const void* listener) {
@@ -99,56 +91,6 @@ static void calculate_frustum_corners(Camera& cam) {
 
 /// ----------------------------------------------------------------------
 /// Camera functions
-
-void camera_free_move_func(Camera& camera) {
-  float speed       = CAMERA_SPEED * clock_get_delta_time();
-  Vec2 mouse_offset = input_mouse_offset(); 
-
-  camera.yaw   = mouse_offset.x * camera.sensitivity;
-  camera.pitch = mouse_offset.y * camera.sensitivity;
-
-  camera.pitch = clamp_float(camera.pitch, -CAMERA_MAX_DEGREES, CAMERA_MAX_DEGREES);
-  camera.zoom  = clamp_float(camera.zoom, 1.0f, CAMERA_MAX_ZOOM);
-
-  if(input_key_down(KEY_UP)) {
-    camera.position += camera.front * speed;
-  }
-  else if(input_key_down(KEY_DOWN)) {
-    camera.position -= camera.front * speed;
-  }
- 
-  if(input_key_down(KEY_RIGHT)) {
-    camera.position += vec3_normalize(vec3_cross(camera.front, camera.up)) * speed;
-  }
-  else if(input_key_down(KEY_LEFT)) {
-    camera.position -= vec3_normalize(vec3_cross(camera.front, camera.up)) * speed;
-  }
-}
-
-void camera_fps_move_func(Camera& camera) {
-  float speed       = CAMERA_SPEED * clock_get_delta_time();
-  Vec2 mouse_offset = input_mouse_offset(); 
-
-  camera.yaw   = mouse_offset.x * camera.sensitivity;
-  camera.pitch = mouse_offset.y * camera.sensitivity;
-
-  camera.pitch = clamp_float(camera.pitch, -CAMERA_MAX_DEGREES, CAMERA_MAX_DEGREES);
-  camera.zoom  = clamp_float(camera.zoom, 1.0f, CAMERA_MAX_ZOOM);
-
-  if(input_key_down(KEY_W)) {
-    camera.position += Vec3(camera.front.x, 0.0f, camera.front.z) * speed;
-  }
-  else if(input_key_down(KEY_S)) {
-    camera.position -= Vec3(camera.front.x, 0.0f, camera.front.z) * speed;
-  }
- 
-  if(input_key_down(KEY_A)) {
-    camera.position -= vec3_normalize(vec3_cross(camera.front, camera.up)) * speed;
-  }
-  else if(input_key_down(KEY_D)) {
-    camera.position += vec3_normalize(vec3_cross(camera.front, camera.up)) * speed;
-  }
-}
 
 void camera_create(Camera& out_cam, const CameraDesc& desc) {
   out_cam.yaw   = -90.0f; 

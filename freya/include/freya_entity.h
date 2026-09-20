@@ -230,6 +230,14 @@ FREYA_API MeshInstancedComponent& entity_add_mesh_instanced(EntityWorld& world,
                                                             const AssetID& mesh_id, 
                                                             const AssetID& material_id = {});
 
+/// A helper function to make the camera component of the given `entt` 
+/// mimick a free-form camera movement, giving it `speed` speed.
+FREYA_API void entity_camera_free_move(EntityWorld& world, EntityID& entt, f32 speed);
+
+/// A helper function to make the camera component of the given `entt` 
+/// mimick a first-person shooter camera movement, giving it `speed` speed.
+FREYA_API void entity_camera_fps_move(EntityWorld& world, EntityID& entt, f32 speed);
+
 /// Retrieve a reference to a generic component `Comp` from `entt` that lives in the given `world`.
 ///
 /// @NOTE: It is often advised to first use `entity_has_component` to first check 

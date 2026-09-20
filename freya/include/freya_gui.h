@@ -143,6 +143,18 @@ FREYA_API void gui_edit_audio_listener(const char* name);
 /// Add a timer section identified by `name` to edit the given `timer`.
 FREYA_API void gui_edit_timer(const char* name, Timer* timer);
 
+/// Add a direcitonal light section identified by `name` to edit the given `light`.
+FREYA_API void gui_edit_directional_light(const char* name, DirectionalLightComponent* light);
+
+/// Add a point light section identified by `name` to edit the given `light`.
+FREYA_API void gui_edit_point_light(const char* name, PointLightComponent* light);
+
+/// Add a mesh component section identified by `name` to edit the given `mesh`.
+FREYA_API void gui_edit_mesh_component(const char* name, MeshComponent* mesh);
+
+/// Add a skybox component section identified by `name` to edit the given `skybox`.
+FREYA_API void gui_edit_skybox_component(const char* name, SkyboxComponent* skybox);
+
 /// Add a noise generator section identified by `name` to edit the given `gen`.
 FREYA_API void gui_edit_noise_generator(const char* name, NoiseGenerator* gen);
 

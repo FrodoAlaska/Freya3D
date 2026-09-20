@@ -507,6 +507,60 @@ void gui_edit_timer(const char* name, Timer* timer) {
   ImGui::PopID(); 
 }
 
+void gui_edit_directional_light(const char* name, DirectionalLightComponent* light) {
+  ImGui::SeparatorText(name); 
+  ImGui::PushID(name); 
+  
+  ImGui::DragFloat3("Direction", &light->direction[0], s_gui.big_step);
+  ImGui::ColorEdit3("Color", &light->color[0]);
+
+  ImGui::PopID(); 
+}
+
+void gui_edit_point_light(const char* name, PointLightComponent* light) {
+  ImGui::SeparatorText(name);
+  ImGui::PushID(name); 
+
+  ImGui::DragFloat3("Color", &light->color[0], s_gui.small_step, 0.0f);
+
+  ImGui::SliderFloat("Radius", &light->radius, 0.0f, 32.0f);
+  ImGui::SliderFloat("Fall off", &light->fall_off, 0.0f, 32.0f);
+
+  ImGui::PopID(); 
+}
+
+void gui_edit_mesh_component(const char* name, MeshComponent* mesh) {
+  ImGui::SeparatorText(name); 
+  ImGui::PushID(name); 
+
+  //
+  // Material 
+  //
+
+  Material& material = mesh->material;
+
+  ImGui::SeparatorText("Material");
+  ImGui::Text("Name: %s", material.name.c_str());
+
+  ImGui::ColorEdit4("Color", &material.color[0]);
+
+  ImGui::SliderFloat("Specular intensity", &material.specular, 1.0f, 256.0f, "Specular intensity: %.3f");
+  ImGui::SliderFloat("Emissive intensity", &material.emissive, 0.01f, 1.0f, "Emissive intensity: %.3f");
+
+  ImGui::Checkbox("Shadows enabled", &material.shadows_enabled);
+
+  ImGui::PopID(); 
+}
+
+void gui_edit_skybox_component(const char* name, SkyboxComponent* skybox) {
+  ImGui::SeparatorText(name); 
+  ImGui::PushID(name); 
+
+  ImGui::ColorEdit3("Ambient color", &skybox->ambient_color[0]);
+
+  ImGui::PopID(); 
+}
+
 FREYA_API void gui_edit_noise_generator(const char* name, NoiseGenerator* gen) {
   ImGui::SeparatorText(name); 
   ImGui::PushID(name); 
@@ -663,6 +717,50 @@ void gui_edit_entity(const char* name, EntityWorld& world, EntityID& entt) {
     if(ImGui::TreeNode("Timer")) {
       Timer& timer = entity_get_component<Timer>(world, entt);
       gui_edit_timer("", &timer);
+
+      ImGui::TreePop();
+    }
+  }
+  
+  // Directional light
+ 
+  if(entity_has_component<DirectionalLightComponent>(world, entt)) {
+    if(ImGui::TreeNode("Directional light")) {
+      DirectionalLightComponent& light = entity_get_component<DirectionalLightComponent>(world, entt);
+      gui_edit_directional_light("", &light);
+
+      ImGui::TreePop();
+    }
+  }
+
+  // Point light
+ 
+  if(entity_has_component<PointLightComponent>(world, entt)) {
+    if(ImGui::TreeNode("Point light")) {
+      PointLightComponent& light = entity_get_component<PointLightComponent>(world, entt);
+      gui_edit_point_light("", &light);
+
+      ImGui::TreePop();
+    }
+  }
+
+  // Mesh
+ 
+  if(entity_has_component<MeshComponent>(world, entt)) {
+    if(ImGui::TreeNode("Mesh component")) {
+      MeshComponent& mesh = entity_get_component<MeshComponent>(world, entt);
+      gui_edit_mesh_component("", &mesh);
+
+      ImGui::TreePop();
+    }
+  }
+
+  // Skybox
+ 
+  if(entity_has_component<SkyboxComponent>(world, entt)) {
+    if(ImGui::TreeNode("Skybox component")) {
+      SkyboxComponent& skybox = entity_get_component<SkyboxComponent>(world, entt);
+      gui_edit_skybox_component("", &skybox);
 
       ImGui::TreePop();
     }

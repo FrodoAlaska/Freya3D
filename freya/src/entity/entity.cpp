@@ -2,6 +2,7 @@
 #include "freya_event.h"
 #include "freya_logger.h"
 #include "freya_render.h"
+#include "freya_input.h"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -226,6 +227,72 @@ MeshInstancedComponent& entity_add_mesh_instanced(EntityWorld& world,
                                       entt, 
                                       asset_group_get_mesh(mesh_id), 
                                       (material_id.is_valid() ? asset_group_get_material(material_id) : default_mat));
+}
+
+void entity_camera_free_move(EntityWorld& world, EntityID& entt, f32 speed) {
+  // Retrive the relevant components
+
+  Camera& camera       = world.get<Camera>(entt);
+  Transform& transform = world.get<Transform>(entt);
+  
+  Vec2 mouse_offset = input_mouse_offset(); 
+
+  // Calculate the inner variables
+  
+  camera.yaw   = mouse_offset.x * camera.sensitivity;
+  camera.pitch = mouse_offset.y * camera.sensitivity;
+
+  camera.pitch = clamp_float(camera.pitch, -CAMERA_MAX_DEGREES, CAMERA_MAX_DEGREES);
+  camera.zoom  = clamp_float(camera.zoom, 1.0f, CAMERA_MAX_ZOOM);
+
+  // Take input
+  
+  if(input_key_down(KEY_UP)) {
+    transform.position += camera.front * speed;
+  }
+  else if(input_key_down(KEY_DOWN)) {
+    transform.position -= camera.front * speed;
+  }
+ 
+  if(input_key_down(KEY_RIGHT)) {
+    transform.position += vec3_normalize(vec3_cross(camera.front, camera.up)) * speed;
+  }
+  else if(input_key_down(KEY_LEFT)) {
+    transform.position -= vec3_normalize(vec3_cross(camera.front, camera.up)) * speed;
+  }
+}
+
+void entity_camera_fps_move(EntityWorld& world, EntityID& entt, f32 speed) {
+  // Retrive the relevant components
+
+  Camera& camera       = world.get<Camera>(entt);
+  Transform& transform = world.get<Transform>(entt);
+  
+  Vec2 mouse_offset = input_mouse_offset(); 
+
+  // Calculate the inner variables
+  
+  camera.yaw   = mouse_offset.x * camera.sensitivity;
+  camera.pitch = mouse_offset.y * camera.sensitivity;
+
+  camera.pitch = clamp_float(camera.pitch, -CAMERA_MAX_DEGREES, CAMERA_MAX_DEGREES);
+  camera.zoom  = clamp_float(camera.zoom, 1.0f, CAMERA_MAX_ZOOM);
+
+  // Take input 
+
+  if(input_key_down(KEY_W)) {
+    transform.position += Vec3(camera.front.x, 0.0f, camera.front.z) * speed;
+  }
+  else if(input_key_down(KEY_S)) {
+    transform.position -= Vec3(camera.front.x, 0.0f, camera.front.z) * speed;
+  }
+ 
+  if(input_key_down(KEY_A)) {
+    transform.position -= vec3_normalize(vec3_cross(camera.front, camera.up)) * speed;
+  }
+  else if(input_key_down(KEY_D)) {
+    transform.position += vec3_normalize(vec3_cross(camera.front, camera.up)) * speed;
+  }
 }
 
 /// EntityID functions
