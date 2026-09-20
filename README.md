@@ -2,18 +2,6 @@
 
 A 3D game engine inspired by the games of the early 2000s. What does that mean? I don't know. Leave me alone.
 
-## Features 
-
-- Cross-platform window creation with OpenGL4.3 and GLES3 using SOKOL.  
-- Gamepad, keyboard, and mouse input support.  
-- A flexible and configurable 2D renderer
-- A fully-fledged audio system with both 2D and 3D spatialized audio.
-- A robust 2D physics engine, using the fantastic Box2D library. 
-- A flexible Entity Component System (ECS) module, using the EnTT library.
-- Integrated ImGui support, featuring an abstracted `gui` layer for editing engine-specific types through a GUI.  
-- A durable, but simple noise generation module
-- A simple tile map system for easily editing and adding tile maps.
-
 ### Dependencies:
 
 - [GLFW](https://github.com/glfw/glfw)
