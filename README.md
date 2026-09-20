@@ -6,7 +6,7 @@ A 3D game engine inspired by the games of the early 2000s. What does that mean? 
 
 - [GLFW](https://github.com/glfw/glfw)
 - [GLM](https://github.com/g-truc/glm)
-- [sokol (-gfx, -gl, -fontstash, shape](https://github.com/floooh/sokol)
+- [sokol (-gfx, -gl, -fontstash, shape)](https://github.com/floooh/sokol)
 - [sokol-gp](https://github.com/edubart/sokol_gp)
 - [fontstash](https://github.com/memononen/fontstash)
 - [ImGui](https://github.com/ocornut/imgui)

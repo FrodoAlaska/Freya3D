@@ -11,9 +11,41 @@
 #include "sokol/sokol_gl.h"
 #include "sokol/sokol_fontstash.h"
 
+#include "shaders/main_shader.h"
+#include "shaders/screen_space_shader.h"
+#include "shaders/skybox_shader.h"
+
 //////////////////////////////////////////////////////////////////////////
 
 namespace freya { // Start of freya
+
+///---------------------------------------------------------------------------------------------------------------------
+/// Consts
+
+const i32 SHADER_BINDING_FRAME_DATA  = UB_FrameData;
+const i32 SHADER_BINDING_MODEL       = UB_ModelIndex;
+const i32 SHADER_BINDING_LIGHT       = UB_Light;
+const i32 SHADER_BINDING_POINT_LIGHT = UB_PointLight;
+const i32 SHADER_BINDING_MATERIAL    = UB_Material;
+
+const sizei INSTANCE_BUFFER_SIZE = KiB(128);
+const u32 POINT_LIGHTS_MAX       = 16;
+
+/// Consts
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
+/// ShaderID
+enum ShaderID {
+  SHADER_SHADOW,
+  SHADER_LIGHTING,
+  SHADER_SCREEN_SPACE,
+  SHADER_SKYBOX,
+
+  SHADERS_COUNT,
+};
+/// ShaderID
+///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------
 /// Renderer
@@ -21,6 +53,7 @@ struct Renderer {
   /// Defaults 
 
   RendererDefaults defaults;
+  Array<AssetID, SHADERS_COUNT> shaders;
 
   /// Per-frame state
 
@@ -199,6 +232,21 @@ static void init_defaults() {
   s_renderer.defaults.sampler = sg_make_sampler(sg_sampler_desc{});
 }
 
+static void init_shaders() {
+  sg_backend backend = sg_query_backend();
+
+  const sg_shader_desc* shader_descs[SHADERS_COUNT] = {
+    shadow_pass_shader_desc(backend),
+    lighting_pass_shader_desc(backend),
+    screen_space_shader_desc(backend),
+    sk_skybox_shader_desc(backend),
+  };
+
+  for(sizei i = 0; i < s_renderer.shaders.size(); i++) {
+    s_renderer.shaders[i] = asset_group_push_shader(s_renderer.group_id, *shader_descs[i]);
+  }
+}
+
 /// Private functions
 ///---------------------------------------------------------------------------------------------------------------------
 
@@ -247,6 +295,11 @@ void renderer_init(Window* window) {
     .height = 512, 
   };
   s_renderer.fons = sfons_create(&fons_desc);
+
+  // Defaults init 
+
+  init_defaults();
+  init_shaders();
 
   // Listen to events
    
