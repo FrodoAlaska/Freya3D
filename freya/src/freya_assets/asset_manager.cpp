@@ -141,13 +141,75 @@ static void build_textures(File& file, const ListSection& section) {
 
     // Write the data
 
-    u32 pixel_size = (format == SG_PIXELFORMAT_RGBA16F) ? 4 : 1; 
+    u32 pixel_size = (format == SG_PIXELFORMAT_RGBA32F) ? 4 : 1; 
     u32 data_size  = (width * height) * 4 * pixel_size; // 4 = color components
 
     file_write_bytes(file, pixels, data_size);
 
     // Free the data
     memory_free(pixels); 
+  }
+}
+
+static void build_cubemaps(File& file, const ListSection& section) {
+  FREYA_PROFILE_FUNCTION();
+
+  // Write the number of assets of this type
+
+  u16 asset_count = (u16)section.assets.size(); 
+  file_write_bytes(file, &asset_count, sizeof(asset_count));
+
+  // Load and write all of the assets
+
+  for(const auto& path : section.assets) {
+    // Write the name of the asset
+
+    FilePath name = filepath_stem(path);
+    file_write_bytes(file, name);
+
+    // Load the asset
+     
+    sg_sampler_desc sampler_desc = {};
+    sampler_desc.min_filter      = SG_FILTER_LINEAR;
+    sampler_desc.mag_filter      = SG_FILTER_LINEAR;
+
+    sg_image_desc image_desc = {};
+    u8* pixels               = nullptr;
+
+    cubemap_loader_load(path, image_desc, &pixels);
+     
+    // 
+    // Write the asset 
+    //
+      
+    // Write the cubemap's size (size per-face)
+
+    u16 width  = (u16)image_desc.width;
+    u16 height = (u16)image_desc.height;
+
+    file_write_bytes(file, &width, sizeof(width));
+    file_write_bytes(file, &height, sizeof(height));
+
+    // Write the format
+
+    u8 format = (u8)image_desc.pixel_format;
+    file_write_bytes(file, &format, sizeof(format));
+
+    // Write the filters 
+
+    u8 min_filter = (u8)sampler_desc.min_filter;
+    u8 mag_filter = (u8)sampler_desc.mag_filter;
+
+    file_write_bytes(file, &min_filter, sizeof(min_filter));
+    file_write_bytes(file, &mag_filter, sizeof(mag_filter));
+
+    // Write the data
+    
+    u32 data_size = CUBEMAP_FACES_MAX * ((width * height) * 4); // 4 = color components
+    file_write_bytes(file, pixels, data_size);
+
+    // Free the data 
+    memory_free(pixels);
   }
 }
 
@@ -304,7 +366,7 @@ static void read_textures(File& file, AssetGroup& group) {
 
     // Read the data
 
-    u32 pixel_size = (format == SG_PIXELFORMAT_RGBA16F) ? 4 : 1; 
+    u32 pixel_size = (format == SG_PIXELFORMAT_RGBA32F) ? 4 : 1; 
     u32 data_size  = (width * height) * 4 * pixel_size; // 4 = color components
 
     void* pixels = memory_allocate(data_size);
@@ -320,6 +382,77 @@ static void read_textures(File& file, AssetGroup& group) {
     
     memory_free(pixels);
     FREYA_LOG_DEBUG("Loaded texture \'%s\' from frpkg ", name.c_str());
+  }
+}
+
+static void read_cubemaps(File& file, AssetGroup& group) {
+  FREYA_PROFILE_FUNCTION();
+  
+  // Read the count
+
+  u16 count;
+  file_read_bytes(file, &count, sizeof(count));
+
+  // Read the asset
+
+  for(u16 i = 0; i < count; i++) {
+    // Read the name
+
+    String name;
+    file_read_bytes(file, &name);
+
+    //
+    // Read the cubemap desc
+    //
+
+    sg_image_desc image_desc     = {};
+    sg_sampler_desc sampler_desc = {};
+
+    // Read the cubemap's size (size per-face)
+
+    u16 width, height;
+    file_read_bytes(file, &width, sizeof(width));  
+    file_read_bytes(file, &height, sizeof(height));  
+
+    image_desc.width  = width;
+    image_desc.height = height;
+
+    image_desc.type = SG_IMAGETYPE_CUBE;
+
+    // Read the format
+
+    u8 format;
+    file_read_bytes(file, &format, sizeof(format));
+
+    image_desc.pixel_format = (sg_pixel_format)format;
+
+    // Read the filters
+
+    u8 min_filter, mag_filter;
+
+    file_read_bytes(file, &min_filter, sizeof(min_filter));
+    file_read_bytes(file, &mag_filter, sizeof(mag_filter));
+
+    sampler_desc.min_filter = (sg_filter)min_filter;
+    sampler_desc.mag_filter = (sg_filter)mag_filter;
+
+    // Read the data
+    
+    u32 data_size = CUBEMAP_FACES_MAX * ((width * height) * 4); // 4 = color components
+
+    void* pixels = memory_allocate(data_size);
+    file_read_bytes(file, pixels, data_size);
+    
+    image_desc.data.mip_levels[0].ptr  = pixels;
+    image_desc.data.mip_levels[0].size = data_size;
+
+    // Add the cubemap to the group
+    group.named_ids[name] = asset_group_push_cubemap(group.id, image_desc, sampler_desc); 
+    
+    // Done!
+    
+    memory_free(pixels);
+    FREYA_LOG_DEBUG("Loaded cubemap \'%s\' from frpkg ", name.c_str());
   }
 }
 
@@ -487,8 +620,8 @@ static bool build_package(const FilePath& list_path, const FilePath& output_path
       case ASSET_TYPE_TEXTURE:
         build_textures(pkg_file, section);
         break;
-      case ASSET_TYPE_SHADER:
-        // @TODO (Assets/shaders): Do we even need to build shaders???
+      case ASSET_TYPE_CUBEMAP:
+        build_cubemaps(pkg_file, section);
         break;
       case ASSET_TYPE_FONT:
         build_fonts(pkg_file, section);
@@ -583,23 +716,34 @@ void asset_group_clear(const AssetGroupID& group_id) {
   // Destroy GFX assets
   //
 
+  for(auto& buff : group.buffers) {
+    sg_destroy_buffer(buff);
+  }
   group.buffers.clear();
+
+  for(auto& tex : group.textures) {
+    sg_destroy_image(tex.image);
+    sg_destroy_view(tex.view);
+    sg_destroy_sampler(tex.sampler);
+  }
   group.textures.clear();
+
+  for(auto& shader : group.shaders) {
+    sg_destroy_shader(shader);
+  }
   group.shaders.clear();
 
   // 
   // Destroy other assets
   //
-  
+
+  group.meshes.clear();
+  group.materials.clear();
+
   for(auto& asset : group.lua_states) {
     lua_close(asset);
   }
   group.lua_states.clear();
-
-  for(auto& asset : group.audio_buffers) {
-    audio_buffer_destroy(asset);
-  }
-  group.audio_buffers.clear();
 
   // Destroy any other members
   group.named_ids.clear();
@@ -649,31 +793,34 @@ bool asset_group_build(const AssetGroupID& group_id,
 
   FilePath paths[] = {
     "textures", 
+    "cubemaps", 
     "fonts",
     "audio", 
     "lua",
   };
 
   for(sizei i = 0; i < group.watchers.size(); i++) {
-    if(!group.watchers[i]) {
-      if(!filesystem_exists(paths[i])) { // Avoid ghost directories
-        continue;
-      }
-
-      FilePath dir = filepath_append(assets_path, paths[i]);
-      FREYA_LOG_DEBUG("Watching directory \'%s\'", dir.c_str());
-
-      group.watchers[i] = filewatcher_create(dir, [=](const FilePath& path, const FileStatus status) {
-        switch(status) {
-          case FILE_STATUS_MODIFIED:
-            build_package(list_path, output_path);
-            asset_group_reload(group_id);
-            break;
-          default:
-            break;
-        }
-      });
+    if(group.watchers[i]) {
+      continue;
     }
+
+    if(!filesystem_exists(paths[i])) { // Avoid ghost directories
+      continue;
+    }
+
+    FilePath dir = filepath_append(assets_path, paths[i]);
+    FREYA_LOG_DEBUG("Watching directory \'%s\'", dir.c_str());
+
+    group.watchers[i] = filewatcher_create(dir, [=](const FilePath& path, const FileStatus status) {
+      switch(status) {
+        case FILE_STATUS_MODIFIED:
+          build_package(list_path, output_path);
+          asset_group_reload(group_id);
+          break;
+        default:
+          break;
+      }
+    });
   }
 
   // We need to check if it's even needed to build the package. 
@@ -742,6 +889,92 @@ AssetID asset_group_push_texture(const AssetGroupID& group_id,
   return id;
 }
 
+AssetID asset_group_push_texture(const AssetGroupID& group_id, const MaterialTextureType type) {
+  // Image init
+
+  sg_image_desc img_desc = {};
+  
+  img_desc.width  = 16;
+  img_desc.height = 16;
+
+  u32 channels = 4;
+
+  u8 pixels[1024]; // width (16) * height (16) * channels (4)
+
+  switch(type) {
+    case MATERIAL_TEXTURE_DIFFUSE: 
+    case MATERIAL_TEXTURE_SPECULAR: 
+      memory_set(pixels, 0xffffffff, sizeof(pixels));
+      break;
+    case MATERIAL_TEXTURE_EMISSIVE: 
+      memory_set(pixels, 0, sizeof(pixels));
+      break;
+    case MATERIAL_TEXTURE_NORMAL: {
+      // Initializing the R and G channels to 0 
+      // and the B and A pixels to 1. That way, 
+      // normal textures look towards the camera 
+      // with complete transparency.
+      
+      for(i32 i = 0; i < img_desc.width; i++) {
+        for(i32 j = 0; j < img_desc.height; j++) {
+          u32 index = (i * img_desc.width) + j;
+          u32 pixel = index * channels; // Index * channels
+
+          pixels[pixel + 0] = 0;
+          pixels[pixel + 1] = 0;
+          pixels[pixel + 2] = 255;
+          pixels[pixel + 3] = 255;
+        }
+      }
+    } break;
+  }
+
+  img_desc.data.mip_levels[0] = SG_RANGE(pixels);
+
+  // Sampler init
+  sg_sampler_desc samp_desc = {};
+
+  // Done!
+  return asset_group_push_texture(group_id, img_desc, samp_desc);
+}
+
+AssetID asset_group_push_cubemap(const AssetGroupID& group_id, 
+                                 const sg_image_desc& image_desc, 
+                                 const sg_sampler_desc& sampler_desc) {
+  GROUP_CHECK(group_id);
+  AssetGroup& group = s_manager.groups[group_id.get_id()];
+  
+  // Create the cubemap
+  
+  Cubemap cubemap;
+
+  cubemap.face_size   = Vec2(image_desc.width, image_desc.height);
+  cubemap.faces_count = CUBEMAP_FACES_MAX;
+  
+  cubemap.id = (i32)group.cubemaps.size();
+  
+  cubemap.image = sg_make_image(image_desc);
+
+  sg_view_desc view_desc  = {};
+  view_desc.texture.image = cubemap.image; 
+
+  cubemap.view    = sg_make_view(view_desc);
+  cubemap.sampler = sg_make_sampler(sampler_desc); 
+
+  // Push the cubemap
+
+  AssetID id; 
+  PUSH_ASSET(group, cubemaps, cubemap, ASSET_TYPE_CUBEMAP, id);
+ 
+  // Some useful debug info
+  
+  FREYA_LOG_DEBUG("Group \'%s\' pushed cubemap:", group.name.c_str());
+  FREYA_LOG_DEBUG("     Size = %i X %i", image_desc.width, image_desc.height);
+ 
+  // Done!
+  return id;
+}
+
 AssetID asset_group_push_shader(const AssetGroupID& group_id, const sg_shader_desc& shader_desc) {
   GROUP_CHECK(group_id);
   AssetGroup& group = s_manager.groups[group_id.get_id()];
@@ -764,6 +997,138 @@ AssetID asset_group_push_shader(const AssetGroupID& group_id, const sg_shader_de
     FREYA_LOG_DEBUG("     Vertex source length = %zu", strlen(shader_desc.vertex_func.source));
     FREYA_LOG_DEBUG("     Pixel source length  = %zu", strlen(shader_desc.fragment_func.source));
   }
+
+  // Done!
+  return id;
+}
+
+AssetID asset_group_push_mesh(const AssetGroupID& group_id, 
+                              const sg_buffer_desc& vertex_desc,
+                              const sg_buffer_desc& index_desc, 
+                              const u32 elements_count) {
+
+  GROUP_CHECK(group_id);
+  AssetGroup& group = s_manager.groups[group_id.get_id()];
+
+  // Buffers init
+
+  AssetID vertex_id = asset_group_push_buffer(group_id, vertex_desc);
+  AssetID index_id  = asset_group_push_buffer(group_id, index_desc);
+  
+  // Create the mesh
+
+  Mesh mesh = {
+    .vertex_buffer = asset_group_get_buffer(vertex_id),
+    .index_buffer  = asset_group_get_buffer(index_id),
+
+    .elements_count = (u32)elements_count,
+  };
+
+  // New mesh ID
+
+  AssetID id; 
+  PUSH_ASSET(group, meshes, mesh, ASSET_TYPE_MESH, id);
+  
+  // Done!
+  
+  FREYA_LOG_DEBUG("Group \'%s\' pushed mesh:", group.name.c_str());
+  return id;
+}
+
+AssetID asset_group_push_mesh(const AssetGroupID& group_id, 
+                              const DynamicArray<Vertex3D>& vertices, 
+                              const DynamicArray<u16>& indices) {
+  GROUP_CHECK(group_id);
+  AssetGroup& group = s_manager.groups[group_id.get_id()];
+
+  // Vertex buffer init
+
+  sg_buffer_desc vert_desc = {};
+  vert_desc.data           = sg_range{vertices.data(), vertices.size() * sizeof(Vertex3D)};
+
+  // Index buffer init
+  
+  sg_buffer_desc idx_desc = {};
+
+  idx_desc.usage.index_buffer = true;
+  idx_desc.data               = sg_range{indices.data(), indices.size() * sizeof(u16)};
+
+  // Create the mesh
+
+  AssetID id = asset_group_push_mesh(group_id, vert_desc, idx_desc, indices.size());
+  FREYA_LOG_DEBUG("     Vertices = %zu", vertices.size());
+  FREYA_LOG_DEBUG("     Indices  = %zu", indices.size());
+
+  // Done!
+  return id;
+} 
+
+AssetID asset_group_push_mesh(const AssetGroupID& group_id, const MeshType type) {
+  GROUP_CHECK(group_id);
+  AssetGroup& group = s_manager.groups[group_id.get_id()];
+
+  // Generate the mesh with the same given type
+
+  DynamicArray<Vertex3D> vertices;
+  DynamicArray<u16> indices;
+  mesh_loader_load(type, vertices, indices);
+
+  // Done!
+  return asset_group_push_mesh(group_id, vertices, indices);
+}
+
+AssetID asset_group_push_material(const AssetGroupID& group_id, const MaterialDesc& desc) {
+  GROUP_CHECK(group_id);
+  AssetGroup& group = s_manager.groups[group_id.get_id()];
+
+  // Create the material
+
+  Material material = {};
+
+  material.name            = desc.name;
+  material.color           = desc.color;
+  material.specular        = desc.specular;
+  material.emissive        = desc.emissive;
+  material.shadows_enabled = desc.shadows_enabled;
+
+  // Set the textures 
+
+  const RendererDefaults& defaults = renderer_get_defaults();
+
+  material.diffuse_map  = defaults.diffuse_map;
+  material.specular_map = defaults.specular_map;
+  material.normal_map   = defaults.normal_map;
+  material.emissive_map = defaults.emissive_map;
+
+  if(desc.diffuse_id.is_valid()) {
+    material.diffuse_map = asset_group_get_texture(desc.diffuse_id);
+  }
+
+  if(desc.specular_id.is_valid()) {
+    material.specular_map = asset_group_get_texture(desc.specular_id);
+  }
+
+  if(desc.normal_id.is_valid()) {
+    material.normal_map = asset_group_get_texture(desc.normal_id);
+  }
+
+  if(desc.emissive_id.is_valid()) {
+    material.emissive_map = asset_group_get_texture(desc.emissive_id);
+  }
+
+  // New material ID
+
+  AssetID id; 
+  PUSH_ASSET(group, materials, material, ASSET_TYPE_MATERIAL, id);
+  
+  // Some useful debug info
+  
+  FREYA_LOG_DEBUG("Group \'%s\' pushed material:", group.name.c_str());
+  FREYA_LOG_DEBUG("     Name     = \'%s\'", material.name.c_str());
+  FREYA_LOG_DEBUG("     Color    = \'%f, %f, %f, %f\'", material.color.r, material.color.g, material.color.g, material.color.a);
+  FREYA_LOG_DEBUG("     Specular = \'%f\'", material.specular);
+  FREYA_LOG_DEBUG("     Emissive = \'%f\'", material.emissive);
+  FREYA_LOG_DEBUG("     Shadows  = %s", (material.shadows_enabled ? "true" : "false"));
 
   // Done!
   return id;
@@ -921,8 +1286,8 @@ bool asset_group_load_package(const AssetGroupID& group_id, const FilePath& frpk
       case ASSET_TYPE_TEXTURE:
         read_textures(file, group);
         break;
-      case ASSET_TYPE_SHADER:
-        // @TODO (Assets/shaders): Again, do we need this???
+      case ASSET_TYPE_CUBEMAP:
+        read_cubemaps(file, group);
         break;
       case ASSET_TYPE_FONT:
         read_fonts(file, group);
@@ -977,9 +1342,24 @@ Texture& asset_group_get_texture(const AssetID& id) {
   return get_asset(id, group.textures, ASSET_TYPE_TEXTURE);
 }
 
+Cubemap& asset_group_get_cubemap(const AssetID& id) {
+  AssetGroup& group = s_manager.groups[id.get_group_id()];
+  return get_asset(id, group.cubemaps, ASSET_TYPE_CUBEMAP);
+}
+
 sg_shader asset_group_get_shader(const AssetID& id) {
   AssetGroup& group = s_manager.groups[id.get_group_id()];
   return get_asset(id, group.shaders, ASSET_TYPE_SHADER);
+}
+
+Mesh& asset_group_get_mesh(const AssetID& id) {
+  AssetGroup& group = s_manager.groups[id.get_group_id()];
+  return get_asset(id, group.meshes, ASSET_TYPE_MESH);
+}
+
+Material& asset_group_get_material(const AssetID& id) {
+  AssetGroup& group = s_manager.groups[id.get_group_id()];
+  return get_asset(id, group.materials, ASSET_TYPE_MATERIAL);
 }
 
 Font* asset_group_get_font(const AssetID& id) {

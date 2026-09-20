@@ -27,6 +27,8 @@ struct GUIState {
 
   ImGuiIO io_config;
   GUIWindowFlags window_flags;
+ 
+  HashMap<String, Vec3> rotations; // @TODO (GUI): Ew!
 
   f32 big_step   = 0.01f; 
   f32 small_step = 0.001f; 
@@ -313,48 +315,6 @@ void gui_debug_info() {
     }
   }
 
-  // Physics
-  {
-    if(ImGui::CollapsingHeader("Physics")) {
-      // Gravity 
-
-      Vec2 gravity = physics_world_get_gravity();
-      if(ImGui::DragFloat2("Gravity", &gravity[0])) {
-        physics_world_set_gravity(gravity);
-      }
-
-      // Timestep
-
-      f32 timestep = physics_world_get_fixed_timestep();
-      if(ImGui::SliderFloat("Timestep", &timestep, 0.0f, 1.0f)) {
-        physics_world_set_fixed_timestep(timestep);
-      }
-
-      // Paused
-
-      bool paused = physics_world_is_paused();
-      if(ImGui::Checkbox("Paused", &paused)) {
-        physics_world_toggle_paused();
-      }
-      
-      // Debug color 
-       
-      Vec4 debug_color = physics_world_get_debug_color();
-      bool is_picked   = ImGui::ColorEdit4("Debug color", &debug_color[0]);
-      
-      if(is_picked) {
-        physics_world_set_debug_color(debug_color);
-      }
-
-      // Debug draw
-       
-      bool is_debug = physics_world_is_debug();
-      if(ImGui::Checkbox("Debug draw", &is_debug)) {
-        physics_world_toggle_debug(); 
-      }
-    }
-  }
-
   gui_end_panel();
 }
 
@@ -368,21 +328,31 @@ void gui_edit_color(const char* name, Vec4& color) {
 }
 
 void gui_edit_transform(const char* name, Transform* transform) {
+  // @TODO (GUI): Will remove this in the future... do not pay attention to it...
+
+  if(s_gui.rotations.find(name) == s_gui.rotations.end()) {
+    s_gui.rotations[name] = Vec3(0.0f);
+  }
+
   ImGui::SeparatorText(name); 
   ImGui::PushID(name); 
 
-  //
+  ///
   // SRT translation
   // 
   
-  // Position
-  ImGui::DragFloat2("Position", &transform->position[0], s_gui.big_step);
+  if(ImGui::DragFloat3("Position", &transform->position[0], s_gui.big_step)) {
+    transform_translate(*transform, transform->position);
+  }
 
-  // Scale
-  ImGui::DragFloat2("Scale", &transform->scale[0], s_gui.big_step);
+  if(ImGui::DragFloat3("Scale", &transform->scale[0], s_gui.big_step)) {
+    transform_scale(*transform, Vec3(transform->scale));
+  }
 
-  // Rotation
-  ImGui::DragFloat("Rotation (in radians)", &transform->rotation, s_gui.big_step);
+  if(ImGui::DragFloat3("Rotation", &s_gui.rotations[name][0], s_gui.big_step)) {
+    Vec3 axis = vec3_normalize(s_gui.rotations[name]);
+    transform_rotate(*transform, axis, s_gui.rotations[name].x);
+  }
   
   ImGui::PopID(); 
 }
@@ -390,26 +360,21 @@ void gui_edit_transform(const char* name, Transform* transform) {
 void gui_edit_camera(const char* name, Camera* camera) {
   ImGui::SeparatorText(name); 
   ImGui::PushID(name); 
+  
+  // Information
+  
+  ImGui::DragFloat("Yaw", &camera->yaw, s_gui.small_step);
+  ImGui::DragFloat("Pitch", &camera->pitch, s_gui.small_step);
 
-  //
-  // Transfrom
-  //
-
-  // Position
-  ImGui::DragFloat2("Position", &camera->position[0], s_gui.big_step);
-
-  // View bounds
-  ImGui::DragInt2("View bounds", &camera->view_bounds[0], s_gui.big_step);
-
-  // Zoom
-  ImGui::DragFloat("Zoom", &camera->zoom, s_gui.big_step);
-
-  // Rotation
-  ImGui::DragFloat("Rotation (in radians)", &camera->rotation, s_gui.big_step);
-
-  // Exposure
-  ImGui::DragFloat("Exposure", &camera->exposure, s_gui.small_step);
-
+  // Editables
+ 
+  ImGui::SliderFloat("Zoom", &camera->zoom, CAMERA_MAX_ZOOM, 0.0f, "Zoom: %.3f");
+  ImGui::SliderFloat("Near", &camera->near_plane, 0.0001f, 1000.0f, "Near: %.3f");
+  ImGui::SliderFloat("Far", &camera->far_plane, 0.0001f, 1000.0f, "Far: %.3f");
+  
+  ImGui::DragFloat("Sensitivity", &camera->sensitivity, s_gui.small_step);
+  ImGui::SliderFloat("Exposure", &camera->exposure, 0.0f, 10.0f, "Exposure: %.3f");
+  
   ImGui::PopID(); 
 }
 
@@ -542,155 +507,6 @@ void gui_edit_timer(const char* name, Timer* timer) {
   ImGui::PopID(); 
 }
 
-void gui_edit_animation(const char* name, Animation* anim) {
-  ImGui::SeparatorText(name); 
-  ImGui::PushID(name); 
-  
-  ImGui::DragInt2("Current frame", &anim->current_frame[0], s_gui.small_step, 0, anim->frames_count);
-  ImGui::DragInt2("Direction", &anim->direction[0], s_gui.small_step, -1, 1);
-  ImGui::DragFloat("Speed", &anim->flip_speed, s_gui.small_step, 0.0f);
-  
-  ImGui::Checkbox("Active", &anim->is_active);
-  ImGui::Checkbox("Loop", &anim->can_loop);
-  ImGui::Checkbox("Alternate", &anim->can_alternate);
-
-  ImGui::NewLine();
-  ImGui::Text("Counter: %0.3f", anim->counter);
-  
-  ImGui::PopID(); 
-}
-
-void gui_edit_animator(const char* name, Animator* anim) {
-  ImGui::SeparatorText(name); 
-  ImGui::PushID(name); 
- 
-  ImGui::Text("Animations: %zu", anim->animations.size()); 
- 
-  i32 current  = anim->current_animation;
-  bool changed = ImGui::DragInt("Current animation", &current, s_gui.small_step, 0, anim->animations.size());
-  
-  if(changed) {
-    animator_switch(*anim, current);
-  }
-
-  ImGui::DragFloat("Speed", &anim->speed, s_gui.small_step, 0.0f);
-
-  ImGui::Checkbox("Immediate", &anim->is_immediate);
-  ImGui::Checkbox("Playing", &anim->is_playing);
-
-  if(ImGui::Button("Reset")) {
-    animator_reset(*anim);
-  }
-
-  ImGui::PopID(); 
-}
-
-void gui_edit_particle_emitter(const char* name, ParticleEmitter* emitter) {
-  ImGui::SeparatorText(name); 
-  ImGui::PushID(name); 
-
-  //
-  // Physics
-  //
-
-  ImGui::DragFloat2("Velocity", &emitter->initial_velocity[0], s_gui.big_step);
-  ImGui::DragFloat2("Bounds", &emitter->bounds[0], s_gui.big_step);
-  
-  ImGui::DragFloat("Lifetime", &emitter->lifetime.limit, s_gui.big_step, 0.0f, 512.0f);
-  ImGui::DragFloat("Gravity", &emitter->gravity_factor, s_gui.big_step);
- 
-  // Rendering
-  
-  ImGui::DragFloat2("Scale", &emitter->initial_scale[0], s_gui.big_step);
-  ImGui::ColorEdit4("Color", &emitter->color[0]);
-
-  //
-  // Distribution
-  //
-  
-  ImGui::DragFloat("Distribution radius", &emitter->distribution_radius, s_gui.big_step);
-
-  i32 current_dist = emitter->distribution;
-  if(ImGui::Combo("Distributions", &current_dist, "Random\0Square\0Circular\0\0")) {
-    emitter->distribution = (ParticleDistributionType)current_dist;
-  }
-
-  // Particles count
-  ImGui::SliderInt("Count", &emitter->particles_count, 1, (i32)(PARTICLES_MAX - 1));
-  
-  ImGui::PopID(); 
-}
-
-void gui_edit_physics_body(const char* name, PhysicsBodyID& body) {
-  ImGui::SeparatorText(name); 
-  ImGui::PushID(name); 
- 
-  PhysicsBodyType body_type = physics_body_get_type(body);
-
-  if(body_type != PHYSICS_BODY_STATIC) {
-    // Position and rotation
-    {
-      Vec2 position = physics_body_get_position(body);
-      f32 rotation  = physics_body_get_rotation(body);
-
-      bool changed_position = ImGui::DragFloat2("Position", &position[0], s_gui.big_step); 
-      bool changed_rotation = ImGui::DragFloat("Rotation (in radians)", &rotation, s_gui.small_step); 
-
-      if(changed_position) {
-        physics_body_set_transform(body, position, rotation);
-      }
-      
-      if(changed_rotation) {
-        physics_body_set_transform(body, position, rotation);
-      }
-    }
-
-    // Linear velocity
-    {
-      Vec2 linear = physics_body_get_linear_velocity(body);
-      if(ImGui::DragFloat2("Linear velocity", &linear[0], s_gui.big_step)) {
-        physics_body_set_linear_velocity(body, linear);
-      }
-    }
-
-    // Angular velocity
-    {
-      f32 angular = physics_body_get_angular_velocity(body);
-      if(ImGui::DragFloat("Angular velocity", &angular, s_gui.big_step)) {
-        physics_body_set_angular_velocity(body, angular);
-      }
-    }
-
-    // Gravity factor
-    {
-      f32 factor = physics_body_get_gravity_factor(body);
-      if(ImGui::DragFloat("Gravity factor", &factor, s_gui.big_step)) {
-        physics_body_set_gravity_factor(body, factor);
-      }
-    }
-  }
-
-  // Active
-  {
-    bool active = physics_body_is_active(body);
-    if(ImGui::Checkbox("Active", &active)) {
-      physics_body_set_active(body, active);
-    }
-  }
-
-  // Body type
-  {
-    i32 current_type    = (i32)body_type;
-    const char* options = "Static\0Dynamic\0Kinematic\0\0";
-
-    if(ImGui::Combo("Type", &current_type, options)) {
-      physics_body_set_type(body, (PhysicsBodyType)current_type);
-    }
-  }
-
-  ImGui::PopID(); 
-}
-
 FREYA_API void gui_edit_noise_generator(const char* name, NoiseGenerator* gen) {
   ImGui::SeparatorText(name); 
   ImGui::PushID(name); 
@@ -795,232 +611,6 @@ FREYA_API void gui_edit_noise_generator(const char* name, NoiseGenerator* gen) {
   ImGui::PopID(); 
 }
 
-void gui_edit_ui_text(const char* name, UIText* text) {
-  ImGui::SeparatorText(name); 
-  ImGui::PushID(name); 
-  
-  // Anchor 
-  
-  i32 anchor_type              = (i32)text->anchor;
-  const char* anchor_options[] = {
-    "Top-left",
-    "Top-center",
-    "Top-right",
-    
-    "Center-left",
-    "Center",
-    "Center-right",
-    
-    "Bottom-left",
-    "Bottom-center",
-    "Bottom-right",
-  }; 
-
-  if(ImGui::Combo("Anchor", &anchor_type, anchor_options, (i32)(UI_ANCHOR_BOTTOM_RIGHT + 1))) {
-    text->anchor = (UIAnchor)anchor_type; 
-    ui_text_place(*text);
-  }
-
-  // Text
-  bool changed = ImGui::InputText("Text", &text->string);
-
-  // Vectors
-  
-  changed = changed || ImGui::DragFloat2("Offset", &text->offset[0], 0.1f);
-  changed = changed || ImGui::DragFloat2("Padding", &text->padding[0], 0.1f);
-  changed = changed || ImGui::DragFloat2("Canvas bounds", &text->canvas_bounds[0], 0.1f);
-
-  // Font settings
-  
-  changed = changed || ImGui::DragFloat("Size", &text->size, 0.1f);
-  ImGui::DragFloat("Blur", &text->blur, 0.1f);
-  changed = changed || ImGui::DragFloat("Spacing", &text->spacing, 0.1f);
-
-  // Others
-
-  ImGui::ColorEdit4("Color", &text->color[0]);
-  ImGui::Checkbox("Active", &text->is_active); 
-
-  // Update the position of the text if anything changed
-
-  if(changed) {
-    ui_text_place(*text);
-  }
-
-  // Other variables
-
-  ImGui::NewLine();
-  ImGui::Text("Position: %0.3f, %0.3f", text->position.x, text->position.y);
-  ImGui::Text("Bounds: %0.3f, %0.3f", text->bounds.x, text->bounds.y);
-  
-  ImGui::PopID(); 
-}
-
-void gui_edit_ui_sprite(const char* name, UISprite* sprite) {
-  ImGui::SeparatorText(name); 
-  ImGui::PushID(name); 
-  
-  // Anchor 
-  
-  i32 anchor_type              = (i32)sprite->anchor;
-  const char* anchor_options[] = {
-    "Top-left",
-    "Top-center",
-    "Top-right",
-    
-    "Center-left",
-    "Center",
-    "Center-right",
-    
-    "Bottom-left",
-    "Bottom-center",
-    "Bottom-right",
-  }; 
-
-  if(ImGui::Combo("Anchor", &anchor_type, anchor_options, (i32)(UI_ANCHOR_BOTTOM_RIGHT + 1))) {
-    sprite->anchor = (UIAnchor)anchor_type; 
-    ui_sprite_place(*sprite);
-  }
-
-  // Layer
-  
-  if(ImGui::DragInt("Layer", &sprite->layer, 1, -1, 10)) {
-    renderer_set_sort(true);
-  }
-
-  // Vectors
- 
-  bool changed = false;
-
-  changed = changed || ImGui::DragFloat2("Offset", &sprite->offset[0], 0.1f);
-  changed = changed || ImGui::DragFloat2("Canvas bounds", &sprite->canvas_bounds[0], 0.1f);
-  changed = changed || ImGui::DragFloat2("Padding", &sprite->padding[0], 0.1f);
-
-  // Others
-
-  ImGui::ColorEdit4("Color", &sprite->color[0]);
-  ImGui::Checkbox("Active", &sprite->is_active); 
-
-  // Update the position of the sprite if anything changed
-
-  if(changed) {
-    ui_sprite_place(*sprite);
-  }
-
-  // Other variables
-
-  ImGui::NewLine();
-  ImGui::Text("Position: %0.3f, %0.3f", sprite->position.x, sprite->position.y);
-  
-  ImGui::PopID(); 
-}
-
-void gui_edit_ui_button(const char* name, UIButton* button) {
-  ImGui::SeparatorText(name); 
-  ImGui::PushID(name); 
-  
-  // Anchor 
-  
-  i32 anchor_type              = (i32)button->anchor;
-  const char* anchor_options[] = {
-    "Top-left",
-    "Top-center",
-    "Top-right",
-    
-    "Center-left",
-    "Center",
-    "Center-right",
-    
-    "Bottom-left",
-    "Bottom-center",
-    "Bottom-right",
-  }; 
-
-  if(ImGui::Combo("Anchor", &anchor_type, anchor_options, (i32)(UI_ANCHOR_BOTTOM_RIGHT + 1))) {
-    button->anchor = (UIAnchor)anchor_type; 
-    ui_button_place(*button);
-  }
-
-  // Text
-  bool changed = ImGui::InputText("Text", &button->text.string);
-
-  // Layer
-  
-  if(ImGui::DragInt("Layer", &button->layer, 1, -1, 10)) {
-    renderer_set_sort(true);
-  }
-
-  // Vectors
-  
-  changed = changed || ImGui::DragFloat2("Size", &button->size[0], 0.1f);
-  
-  changed = changed || ImGui::DragFloat2("Offset", &button->offset[0], 0.1f);
-  changed = changed || ImGui::DragFloat2("Canvas bounds", &button->canvas_bounds[0], 0.1f);
-  changed = changed || ImGui::DragFloat2("Padding", &button->padding[0], 0.1f);
-
-  // Font settings
-  
-  changed = changed || ImGui::DragFloat("Font size", &button->text.size, 0.1f);
-  changed = changed || ImGui::DragFloat("Spacing", &button->text.spacing, 0.1f);
-
-  // Others
-  
-  changed = changed || ImGui::DragFloat("Outline thickness", &button->size.z, 0.1f);
-
-  ImGui::ColorEdit4("Color", &button->color[0]);
-  ImGui::ColorEdit4("Outline color", &button->outline_color[0]);
-  ImGui::ColorEdit4("Text color", &button->text.color[0]);
-  
-  button->text.is_active = ImGui::Checkbox("Active", &button->is_active);
-
-  // Update the position of the button if anything changed
-
-  if(changed) {
-    ui_button_place(*button);
-  }
-
-  // Other variables
-
-  ImGui::NewLine();
-  ImGui::Text("Position: %0.3f, %0.3f", button->position.x, button->position.y);
-  ImGui::Text("Size: %0.3f, %0.3f", button->size.x, button->size.y);
-
-  ImGui::NewLine();
-  ImGui::Text("Text position: %0.3f, %0.3f", button->text.position.x, button->text.position.y);
-  ImGui::Text("Text bounds: %0.3f, %0.3f", button->text.bounds.x, button->text.bounds.y);
-  
-  ImGui::PopID(); 
-}
-
-void gui_edit_sprite_component(const char* name, SpriteComponent* sprite) {
-  ImGui::SeparatorText(name); 
-  ImGui::PushID(name); 
-   
-  if(ImGui::DragInt("Layer", &sprite->layer, 1, -1, 10)) {
-    renderer_set_sort(true);
-  }
-
-  ImGui::DragFloat2("Source size", &sprite->source_rect.size[0], s_gui.big_step);
-  ImGui::DragFloat2("Source position", &sprite->source_rect.position[0], s_gui.big_step);
-
-  ImGui::ColorEdit4("Tint", &sprite->color[0]);
-  
-  ImGui::PopID(); 
-}
-
-void gui_edit_poisson_disk(const char* name, PoissonDiskDesc* disk) {
-  ImGui::SeparatorText(name); 
-  ImGui::PushID(name); 
-  
-  ImGui::DragFloat("Radius", &disk->radius, 0.01f, 0.0f);
-  ImGui::DragInt("Iterations before rejection", &disk->num_iterations, 1.0f, 0);
-
-  ImGui::DragFloat2("Start point", &disk->start_point[0], s_gui.big_step);
-  ImGui::DragFloat2("Region size", &disk->region_size[0], s_gui.big_step);
-
-  ImGui::PopID(); 
-}
-
 void gui_edit_entity(const char* name, EntityWorld& world, EntityID& entt) {
   ImGui::SeparatorText(name); 
   ImGui::PushID(name); 
@@ -1056,39 +646,6 @@ void gui_edit_entity(const char* name, EntityWorld& world, EntityID& entt) {
     }
   }
   
-  // UIText 
-
-  if(entity_has_component<UIText>(world, entt)) {
-    if(ImGui::TreeNode("UI Text")) {
-      UIText& text = entity_get_component<UIText>(world, entt);
-      gui_edit_ui_text("", &text);
-
-      ImGui::TreePop();
-    }
-  }
-  
-  // UISprite 
-
-  if(entity_has_component<UISprite>(world, entt)) {
-    if(ImGui::TreeNode("UI Sprite")) {
-      UISprite& sprite = entity_get_component<UISprite>(world, entt);
-      gui_edit_ui_sprite("", &sprite);
-
-      ImGui::TreePop();
-    }
-  }
-  
-  // UIButton 
-
-  if(entity_has_component<UIButton>(world, entt)) {
-    if(ImGui::TreeNode("UI button")) {
-      UIButton& button = entity_get_component<UIButton>(world, entt);
-      gui_edit_ui_button("", &button);
-
-      ImGui::TreePop();
-    }
-  }
-  
   // Tag
  
   if(entity_has_component<TagComponent>(world, entt)) {
@@ -1099,29 +656,6 @@ void gui_edit_entity(const char* name, EntityWorld& world, EntityID& entt) {
       ImGui::TreePop();
     }
   }
-
-  // Dynamic body
-
-  if(entity_has_component<DynamicBodyComponent>(world, entt)) {
-    if(ImGui::TreeNode("Dynamic body")) {
-      DynamicBodyComponent& comp = entity_get_component<DynamicBodyComponent>(world, entt);
-      gui_edit_physics_body("", comp.body);
-
-      ImGui::TreePop();
-    }
-  }
-  
-  // Static body
-
-  if(entity_has_component<StaticBodyComponent>(world, entt)) {
-    if(ImGui::TreeNode("Static body")) {
-      StaticBodyComponent& comp = entity_get_component<StaticBodyComponent>(world, entt);
-      gui_edit_physics_body("", comp.body);
-
-      ImGui::TreePop();
-    }
-  }
-
   
   // Timer 
 
@@ -1134,56 +668,12 @@ void gui_edit_entity(const char* name, EntityWorld& world, EntityID& entt) {
     }
   }
   
-  // Particles 
-
-  if(entity_has_component<ParticleEmitter>(world, entt)) {
-    if(ImGui::TreeNode("Particle emitter")) {
-      ParticleEmitter& emitter = entity_get_component<ParticleEmitter>(world, entt);
-      gui_edit_particle_emitter("", &emitter);
-
-      ImGui::TreePop();
-    }
-  }
-  
   // Noise generator 
 
   if(entity_has_component<NoiseGenerator*>(world, entt)) {
     if(ImGui::TreeNode("Noise generator")) {
       NoiseGenerator* gen = entity_get_component<NoiseGenerator*>(world, entt);
       gui_edit_noise_generator("", gen);
-
-      ImGui::TreePop();
-    }
-  }
-  
-  // Sprites
-
-  if(entity_has_component<SpriteComponent>(world, entt)) {
-    if(ImGui::TreeNode("Sprite")) {
-      SpriteComponent& sprite = entity_get_component<SpriteComponent>(world, entt);
-      gui_edit_sprite_component("", &sprite);
-
-      ImGui::TreePop();
-    }
-  }
-  
-  // Animation
-
-  if(entity_has_component<AnimationComponent>(world, entt)) {
-    if(ImGui::TreeNode("Animation")) {
-      AnimationComponent& anim = entity_get_component<AnimationComponent>(world, entt);
-      gui_edit_animation("", &anim.animation);
-
-      ImGui::TreePop();
-    }
-  }
-  
-  // Animator
-
-  if(entity_has_component<Animator>(world, entt)) {
-    if(ImGui::TreeNode("Animator")) {
-      Animator& anim = entity_get_component<Animator>(world, entt);
-      gui_edit_animator("", &anim);
 
       ImGui::TreePop();
     }

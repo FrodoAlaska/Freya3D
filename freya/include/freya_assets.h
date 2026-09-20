@@ -1,12 +1,26 @@
 #pragma once
 
-#include "freya_audio.h"
-#include "freya_gfx.h"
 #include "freya_file.h"
+#include "freya_audio.h"
+
+#include "sokol/sokol_gfx.h"
 
 //////////////////////////////////////////////////////////////////////////
 
 namespace freya { // Start of freya
+
+///---------------------------------------------------------------------------------------------------------------------
+/// Forward declarations
+
+struct Texture;
+struct Cubemap;
+struct Mesh;
+struct MaterialDesc;
+struct Material;
+struct Font;
+
+/// Forward declarations
+///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------
 /// Assets consts
@@ -33,14 +47,40 @@ enum AssetType {
   
   ASSET_TYPE_BUFFER = 0, 
   ASSET_TYPE_TEXTURE, 
+  ASSET_TYPE_CUBEMAP, 
   ASSET_TYPE_SHADER,
-  ASSET_TYPE_FONT,
+  ASSET_TYPE_MESH,
+  ASSET_TYPE_MATERIAL,
   ASSET_TYPE_AUDIO_BUFFER,
+  ASSET_TYPE_FONT,
   ASSET_TYPE_LUA,
 
   ASSET_TYPES_MAX,
 };
 /// AssetType
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
+/// MaterialTextureType
+enum MaterialTextureType {
+  MATERIAL_TEXTURE_DIFFUSE,
+  MATERIAL_TEXTURE_SPECULAR,
+  MATERIAL_TEXTURE_NORMAL,
+  MATERIAL_TEXTURE_EMISSIVE,
+};
+/// MaterialTextureType
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
+/// MeshType
+enum MeshType {
+  MESH_PLANE,
+  MESH_CUBE, 
+  MESH_SPHERE, 
+  MESH_CYLINDER,
+  MESH_TORUS,
+};
+/// MeshType
 ///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------
@@ -97,6 +137,7 @@ struct AssetID {
     inline const i16 get_id() const {return _id;}
     inline const AssetGroupID get_group() const {return _group;}
     inline const i32 get_group_id() const {return _group.get_id();}
+    inline bool is_valid() const {return _id != ASSET_ID_INVALID;}
 
   /// Operators
 
@@ -153,7 +194,10 @@ struct AssetGroup {
 
   DynamicArray<sg_buffer> buffers;
   DynamicArray<Texture> textures;
+  DynamicArray<Cubemap> cubemaps;
   DynamicArray<sg_shader> shaders;
+  DynamicArray<Mesh> meshes;
+  DynamicArray<Material> materials;
   DynamicArray<AudioBufferID> audio_buffers;
   
   DynamicArray<Font*> fonts;
@@ -164,11 +208,11 @@ struct AssetGroup {
   ///
   /// @NOTE/@TEMP:
   ///
-  /// We have 4 watchers here for all the assets that are actually 
+  /// We have a few watchers here for all the assets that are actually 
   /// read from the disk, as opposed to the assets that are created 
-  /// on the CPU. Currently, the 4 are: textures, fonts, audio buffers, and lua files.
+  /// on the CPU. Currently, they are: textures, cubemaps, fonts, audio buffers, and lua files.
   ///
-  Array<FileWatcher*, 4> watchers; // on the wall... no? ASOIAF?
+  Array<FileWatcher*, 5> watchers; // on the wall... no? ASOIAF?
 };
 /// AssetGroup 
 ///---------------------------------------------------------------------------------------------------------------------
@@ -234,9 +278,40 @@ FREYA_API AssetID asset_group_push_texture(const AssetGroupID& group_id,
                                            const sg_image_desc& image_desc, 
                                            const sg_sampler_desc& sampler_desc);
 
+/// Push a new `Texture` of type `MaterialTextureType`, returning a valid `AssetID` to be used later.
+FREYA_API AssetID asset_group_push_texture(const AssetGroupID& group_id, const MaterialTextureType type);
+
+/// Push a new `Cubemap` into `group_id`, using all the information found in `image_desc`, and `sampler_desc`,
+/// returning a valid `AssetID` to be used later.
+FREYA_API AssetID asset_group_push_cubemap(const AssetGroupID& group_id, 
+                                           const sg_image_desc& image_desc, 
+                                           const sg_sampler_desc& sampler_desc);
+
 /// Push a new `sg_shader` into `group_id`, using all the information found in `shader_desc`,
 /// returning a valid `AssetID` to be used later.
 FREYA_API AssetID asset_group_push_shader(const AssetGroupID& group_id, const sg_shader_desc& shader_desc);
+
+/// Push a new `Mesh` into `group_id`, using the given `vertex_desc` and `index_desc` to create 
+/// the internal mesh buffers, and `elements_count` to use for rendering later,
+/// returning a valid `AssetID` to be used later.
+FREYA_API AssetID asset_group_push_mesh(const AssetGroupID& group_id, 
+                                        const sg_buffer_desc& vertex_desc,
+                                        const sg_buffer_desc& index_desc, 
+                                        const u32 elements_count);
+
+/// Push a new `Mesh` into `group_id`, using the given `vertices` and `indices`,
+/// returning a valid `AssetID` to be used later.
+FREYA_API AssetID asset_group_push_mesh(const AssetGroupID& group_id, 
+                                        const DynamicArray<Vertex3D>& vertices, 
+                                        const DynamicArray<u16>& indices);
+
+/// Push a new `Mesh` into `group_id` of type `type`,
+/// returning a valid `AssetID` to be used later.
+FREYA_API AssetID asset_group_push_mesh(const AssetGroupID& group_id, const MeshType type);
+
+/// Push a new `Material` into `group_id`, using the given information in `desc`,
+/// returning a valid `AssetID` to be used later.
+FREYA_API AssetID asset_group_push_material(const AssetGroupID& group_id, const MaterialDesc& desc);
 
 /// Push a new `Font` into `group_id`, using `font_data` and `name` (name of the font),
 /// returning a valid `AssetID` to be used later.
@@ -277,6 +352,14 @@ FREYA_API sg_buffer asset_group_get_buffer(const AssetID& id);
 ///   3 - or the internal type does not match this asset.
 FREYA_API Texture& asset_group_get_texture(const AssetID& id);
 
+/// Retrieve a `Cubemap`, using `id`.
+///
+/// @NOTE: This function will assert if the given `id` is either: 
+///   1 - is invalid and was never created before, 
+///   2 - the internal group ID is invalid,
+///   3 - or the internal type does not match this asset.
+FREYA_API Cubemap& asset_group_get_cubemap(const AssetID& id);
+
 /// Retrieve a `sg_shader`, using `id`.
 ///
 /// @NOTE: This function will assert if the given `id` is either: 
@@ -284,6 +367,22 @@ FREYA_API Texture& asset_group_get_texture(const AssetID& id);
 ///   2 - the internal group ID is invalid,
 ///   3 - or the internal type does not match this asset.
 FREYA_API sg_shader asset_group_get_shader(const AssetID& id);
+
+/// Retrieve a `Mesh`, using `id`.
+///
+/// @NOTE: This function will assert if the given `id` is either: 
+///   1 - is invalid and was never created before, 
+///   2 - the internal group ID is invalid,
+///   3 - or the internal type does not match this asset.
+FREYA_API Mesh& asset_group_get_mesh(const AssetID& id);
+
+/// Retrieve a `Material`, using `id`.
+///
+/// @NOTE: This function will assert if the given `id` is either: 
+///   1 - is invalid and was never created before, 
+///   2 - the internal group ID is invalid,
+///   3 - or the internal type does not match this asset.
+FREYA_API Material& asset_group_get_material(const AssetID& id);
 
 /// Retrieve a `Font`, using `id`.
 ///

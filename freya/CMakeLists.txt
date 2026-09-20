@@ -19,7 +19,6 @@ set(FREYA_SOURCES
   ${FREYA_SRC_DIR}/math/vector.cpp
   ${FREYA_SRC_DIR}/math/quaternion.cpp
   ${FREYA_SRC_DIR}/math/transform.cpp
-  ${FREYA_SRC_DIR}/math/poisson_disk.cpp
 
   # Threads
   ${FREYA_SRC_DIR}/threads/thread_pool.cpp
@@ -29,9 +28,6 @@ set(FREYA_SOURCES
 
   # UI
   ${FREYA_SRC_DIR}/ui/gui.cpp
-  ${FREYA_SRC_DIR}/ui/ui_text.cpp
-  ${FREYA_SRC_DIR}/ui/ui_sprite.cpp
-  ${FREYA_SRC_DIR}/ui/ui_button.cpp
 
   # Filesystem
   ${FREYA_SRC_DIR}/filesystem/file.cpp
@@ -47,42 +43,26 @@ set(FREYA_SOURCES
   
   # Assets/loaders
   ${FREYA_SRC_DIR}/freya_assets/loaders/texture_loader.cpp
+  ${FREYA_SRC_DIR}/freya_assets/loaders/cubemap_loader.cpp
   ${FREYA_SRC_DIR}/freya_assets/loaders/font_loader.cpp
   ${FREYA_SRC_DIR}/freya_assets/loaders/audio_loader.cpp
   ${FREYA_SRC_DIR}/freya_assets/loaders/lua_state_loader.cpp
+  ${FREYA_SRC_DIR}/freya_assets/loaders/mesh_loader.cpp
  
   # Renderer
   ${FREYA_SRC_DIR}/renderer/camera.cpp
-  ${FREYA_SRC_DIR}/renderer/particles.cpp
   ${FREYA_SRC_DIR}/renderer/color.cpp
-  ${FREYA_SRC_DIR}/renderer/post_process.cpp
   ${FREYA_SRC_DIR}/renderer/renderer.cpp
-  
-  # Renderer/post-process effects
-  ${FREYA_SRC_DIR}/renderer/post_process_effects/blur_pass.cpp
-  ${FREYA_SRC_DIR}/renderer/post_process_effects/greyscale_pass.cpp
-  ${FREYA_SRC_DIR}/renderer/post_process_effects/vignette_pass.cpp
   
   # Entity
   ${FREYA_SRC_DIR}/entity/entity.cpp
   
-  # Physics
-  ${FREYA_SRC_DIR}/physics/box2d_backend.cpp
-  
   # Noise
   ${FREYA_SRC_DIR}/noise/noise_generator.cpp
-  
-  # Tile
-  ${FREYA_SRC_DIR}/tile/tilemap.cpp
-  
-  # Animation
-  ${FREYA_SRC_DIR}/animation/animation.cpp
-  ${FREYA_SRC_DIR}/animation/animator.cpp
 )
 
 set(FREYA_HEADERS
   ${FREYA_INCLUDE_DIR}/freya.h
-  ${FREYA_INCLUDE_DIR}/freya_animation.h
   ${FREYA_INCLUDE_DIR}/freya_app.h
   ${FREYA_INCLUDE_DIR}/freya_assets.h
   ${FREYA_INCLUDE_DIR}/freya_audio.h
@@ -98,12 +78,9 @@ set(FREYA_HEADERS
   ${FREYA_INCLUDE_DIR}/freya_math.h
   ${FREYA_INCLUDE_DIR}/freya_memory.h
   ${FREYA_INCLUDE_DIR}/freya_noise.h
-  ${FREYA_INCLUDE_DIR}/freya_physics.h
   ${FREYA_INCLUDE_DIR}/freya_render.h
   ${FREYA_INCLUDE_DIR}/freya_threads.h
-  ${FREYA_INCLUDE_DIR}/freya_tilemap.h
   ${FREYA_INCLUDE_DIR}/freya_timer.h
-  ${FREYA_INCLUDE_DIR}/freya_ui.h
   ${FREYA_INCLUDE_DIR}/freya_window.h
 )
 

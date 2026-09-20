@@ -1,6 +1,6 @@
 # The Freya Game Engine
 
-A very capable, yet simple 2D game engine made entirely for hobby purposes. It is full of features that target 2D games/applications, with no plans to target 3D _any_ time soon. It is _purely_ a 2D game engine. It currently fully supports *Windows*, *Linux*, and the *Web*.
+A 3D game engine inspired by the games of the early 2000s. What does that mean? I don't know. Leave me alone.
 
 ## Features 
 
@@ -18,12 +18,11 @@ A very capable, yet simple 2D game engine made entirely for hobby purposes. It i
 
 - [GLFW](https://github.com/glfw/glfw)
 - [GLM](https://github.com/g-truc/glm)
-- [sokol-gfx, sokol-gl, sokol-fontstash](https://github.com/floooh/sokol)
-- [fontstash](https://github.com/memononen/fontstash)
+- [sokol (-gfx, -gl, -fontstash, shape](https://github.com/floooh/sokol)
 - [sokol-gp](https://github.com/edubart/sokol_gp)
+- [fontstash](https://github.com/memononen/fontstash)
 - [ImGui](https://github.com/ocornut/imgui)
 - [OpenAL-Soft](https://github.com/kcat/openal-soft)
-- [Box2D](https://github.com/erincatto/box2d)
 - [EnTT](https://github.com/skypjack/entt)
 - [stb](https://github.com/nothings/stb)
 - [dr_libs](https://github.com/mackron/dr_libs)

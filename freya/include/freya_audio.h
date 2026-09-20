@@ -115,18 +115,18 @@ struct AudioSourceDesc {
   /// @NOTE: Freya uses a right-handed coordinate system by default. 
   /// Make sure to keep that in mind when positioning the audio source.
   ///
-  /// @NOTE: This is `{0.0f, 0.0f}` by default.
-  Vec2 position       = Vec2(0.0f);
+  /// @NOTE: This is `Vec3(0.0f)` by default.
+  Vec3 position       = Vec3(0.0f);
   
   /// The velocity of the audio source. 
   ///
-  /// @NOTE: This is `{0.0f, 0.0f}` by default.
-  Vec2 velocity       = Vec2(0.0f);
+  /// @NOTE: This is `Vec3(0.0f)` by default.
+  Vec3 velocity       = Vec3(0.0f);
   
   /// The direction of the audio source. 
   ///
-  /// @NOTE: This is `{0.0f, 0.0f}` by default.
-  Vec2 direction      = Vec2(0.0f);
+  /// @NOTE: This is `Vec3(0.0f)` by default.
+  Vec3 direction      = Vec3(0.0f);
 
   /// Indicates whether the audio source should be loopable.
   ///
@@ -158,13 +158,13 @@ struct AudioListenerDesc {
   /// @NOTE: Freya uses a right-handed coordinate system by default. 
   /// Make sure to keep that in mind when positioning the listener.
   ///
-  /// @NOTE: This is `{0.0f, 0.0f}` by default.
-  Vec2 position = Vec2(0.0f);
+  /// @NOTE: This is `Vec3(0.0f)` by default.
+  Vec3 position = Vec3(0.0f);
   
   /// The velocity of the listener.
   ///
-  /// @NOTE: This is set to `{0.0f, 0.0f}` by default.
-  Vec2 velocity = Vec2(0.0f);
+  /// @NOTE: This is set to `Vec3(0.0f)` by default.
+  Vec3 velocity = Vec3(0.0f);
 };
 /// AudioListenerDesc
 ///---------------------------------------------------------------------------------------------------------------------
@@ -259,13 +259,13 @@ FREYA_API void audio_source_set_pitch(AudioSourceID& source, const f32 pitch);
 FREYA_API void audio_source_set_looping(AudioSourceID& source, const bool looping);
 
 /// Set the position of `source` to the given `position`.
-FREYA_API void audio_source_set_position(AudioSourceID& source, const Vec2& position);
+FREYA_API void audio_source_set_position(AudioSourceID& source, const Vec3& position);
 
 /// Set the velocity of `source` to the given `velocity`.
-FREYA_API void audio_source_set_velocity(AudioSourceID& source, const Vec2& velocity);
+FREYA_API void audio_source_set_velocity(AudioSourceID& source, const Vec3& velocity);
 
 /// Set the direction of `source` to the given `direction`.
-FREYA_API void audio_source_set_direction(AudioSourceID& source, const Vec2& direction);
+FREYA_API void audio_source_set_direction(AudioSourceID& source, const Vec3& direction);
 
 /// AudioSource functions
 ///---------------------------------------------------------------------------------------------------------------------
@@ -283,10 +283,10 @@ FREYA_API AudioListenerDesc& audio_listener_get_desc();
 FREYA_API void audio_listener_set_volume(const f32 volume);
 
 /// Set the position of global audio listener to the given `position`.
-FREYA_API void audio_listener_set_position(const Vec2& position);
+FREYA_API void audio_listener_set_position(const Vec3& position);
 
 /// Set the velocity of global audio listener to the given `velocity`.
-FREYA_API void audio_listener_set_velocity(const Vec2& velocity);
+FREYA_API void audio_listener_set_velocity(const Vec3& velocity);
 
 /// AudioListener functions
 ///---------------------------------------------------------------------------------------------------------------------

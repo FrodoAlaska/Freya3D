@@ -13,6 +13,7 @@
 #include "sokol_gfx.h"
 #include "sokol_gl.h"
 #include "sokol_gp.h"
+#include "sokol_shape.h"
 
 #define FONTSTASH_IMPLEMENTATION
 

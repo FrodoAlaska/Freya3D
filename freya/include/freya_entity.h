@@ -1,9 +1,7 @@
 #pragma once
 
-#include "freya_physics.h"
 #include "freya_noise.h"
-#include "freya_animation.h"
-#include "freya_ui.h"
+#include "freya_timer.h"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -12,13 +10,8 @@ namespace freya { // Start of freya
 /// ----------------------------------------------------------------------
 /// Forward declarations
 
-struct TileMap;
-
 struct CameraDesc;
 struct Camera;
-
-struct ParticleEmitterDesc;
-struct ParticleEmitter;
 
 /// Forward declarations
 /// ----------------------------------------------------------------------
@@ -46,14 +39,6 @@ const EntityID ENTITY_NULL = entt::null;
 
 /// ----------------------------------------------------------------------
 /// Callbacks
-
-/// Called when the physics body of `entt` is collided with `other` in the physics world, 
-/// passing in the generated `normal` from the collision, and `user_data`.
-using OnCollisionFn   = std::function<void(EntityWorld& world, 
-                                           EntityID& entt, 
-                                           EntityID& other, 
-                                           const Vec2& normal, 
-                                           void* user_data)>;
 
 /// Called when the timer of `entt` has runout, passing in `user_data`.
 using OnTimerRunoutFn = std::function<void(EntityWorld& world, EntityID& entt, void* user_data)>;
@@ -101,83 +86,6 @@ struct UILayoutComponent {
 /// ----------------------------------------------------------------------
 
 /// ----------------------------------------------------------------------
-/// SpriteComponent
-struct SpriteComponent {
-  /// The texture that will 
-  /// be given to the render command.
-  ///
-  /// @NOTE: If this texture is left as a 
-  /// `nullptr`, the default texture will be used.
-  Texture texture = {}; 
-
-  /// The source rect that will be used 
-  /// with the texture atlas while rendering. 
-  Rect2D source_rect    = {};
-
-  /// The color/tint that will be used 
-  /// in the render command. 
-  ///
-  /// @NOTE: This is `COLOR_WHITE` by default.
-  Vec4 color      = COLOR_WHITE;
-
-  /// The layer associated with the sprite. 
-  /// `-1` indicates that the sprite will be 
-  /// rendered at the very back. The higher 
-  /// the value, the farther to the front the sprite will be drawn.
-  ///
-  /// @NOTE: By default, this value is `-1`.
-  i32 layer       = -1;
-};
-/// SpriteComponent
-/// ----------------------------------------------------------------------
-
-/// ----------------------------------------------------------------------
-/// StaticBodyComponent
-struct StaticBodyComponent {
-  /// The internal handle of the physics body, 
-  /// to be used with `physics_body_*` functions.
-  PhysicsBodyID body; 
-
-  /// Function pointers that will be called either 
-  /// on collision enter or collision exit.
-  
-  OnCollisionFn enter_func = nullptr;
-  OnCollisionFn exit_func  = nullptr;
-};
-/// StaticBodyComponent
-/// ----------------------------------------------------------------------
-
-/// ----------------------------------------------------------------------
-/// DynamicBodyComponent
-struct DynamicBodyComponent {
-  /// The internal handle of the physics body, 
-  /// to be used with `physics_body_*` functions.
-  PhysicsBodyID body; 
-
-  /// Function pointers that will be called either 
-  /// on collision enter or collision exit.
-  
-  OnCollisionFn enter_func = nullptr;
-  OnCollisionFn exit_func  = nullptr;
-};
-/// DynamicBodyComponent
-/// ----------------------------------------------------------------------
-
-/// ----------------------------------------------------------------------
-/// AnimationComponent
-struct AnimationComponent {
-  /// Animation itself that will be 
-  /// updated and rendered.
-  Animation animation; 
-
-  /// The tint that will be used 
-  /// in the render command. 
-  Vec4 tint;
-};
-/// AnimationComponent
-/// ----------------------------------------------------------------------
-
-/// ----------------------------------------------------------------------
 /// EntityWorld functions
 
 /// Clear (and thereby destroy) the given `world` of any 
@@ -199,9 +107,9 @@ FREYA_API void entity_world_update(EntityWorld& world, const f32 delta_time);
 /// Create an return a new entity in the given `world`, with `position`, 
 /// `scale`, and `rotation` as its transform properties.
 FREYA_API EntityID entity_create(EntityWorld& world,
-                                 const Vec2& position, 
-                                 const Vec2& scale  = Vec2(1.0f), 
-                                 const f32 rotation = 0.0f);
+                                 const Vec3& position, 
+                                 const Vec3& scale    = Vec3(1.0f), 
+                                 const Quat& rotation = Quat(0.0f, 0.0f, 0.0f, 1.0f));
 
 /// Destroy the given `entt` and remove it and its components from `world`.
 FREYA_API void entity_destroy(EntityWorld& world, EntityID& entt);
@@ -235,40 +143,6 @@ FREYA_API AudioSourceID& entity_add_audio_source(EntityWorld& world,
 /// in `desc`, mirroring the `noise_generator_create` function.
 FREYA_API NoiseGenerator* entity_add_noise_generator(EntityWorld& world, EntityID& entt, const NoiseGeneratorDesc& desc);
 
-/// A helper function to add a tile map component to `entt`, using the given 
-/// `start_pos`, `tile_size`, and `tiles_count`, mirroring the `tilemap_create` function.
-FREYA_API TileMap& entity_add_tilemap(EntityWorld& world, 
-                                      EntityID& entt, 
-                                      const Vec2& start_pos, 
-                                      const Vec2& tile_size, 
-                                      const IVec2& tiles_count);
-
-/// A helper function to add a UI text to `entt`, using the information 
-/// in `desc`, mirroring the `ui_text_create` function.
-///
-/// @NOTE: The position of the given `entt` will be used as the 
-/// `offset` member of the `desc`, and the scale will be used for the `font_size`.
-FREYA_API UIText& entity_add_text(EntityWorld& world, EntityID& entt, UITextDesc& desc);
-
-/// A helper function to add a UI sprite to `entt`, using the information 
-/// in `desc`, mirroring the `ui_sprite_create` function.
-///
-/// @NOTE: The position of the given `entt` will be used as the 
-/// `offset` member of the `desc`, and the scale will be used for the `size`.
-FREYA_API UISprite& entity_add_ui_sprite(EntityWorld& world, EntityID& entt, UISpriteDesc& desc);
-
-/// A helper function to add a UI button to `entt`, using the information 
-/// in `desc`, mirroring the `ui_button_create` function.
-///
-/// @NOTE: The position of the given `entt` will be used as the 
-/// `offset` member of the `desc`, and the scale will be used for the `size` of the button.
-FREYA_API UIButton& entity_add_ui_button(EntityWorld& world, EntityID& entt, UIButtonDesc& desc);
-
-/// A helper function to add a particle emitter to `entt` using the information 
-/// in `desc` or in a config file given in `config_id`.
-FREYA_API ParticleEmitter& entity_add_particle_emitter(EntityWorld& world, EntityID& entt, const ParticleEmitterDesc& desc);
-FREYA_API ParticleEmitter& entity_add_particle_emitter(EntityWorld& world, EntityID& entt, const AssetID& config_id);
-
 /// A helper function to add a tag to `entt` using the given `tag`.
 FREYA_API TagComponent& entity_add_tag(EntityWorld& world, EntityID& entt, const String& tag);
 
@@ -279,67 +153,6 @@ FREYA_API TimerComponent& entity_add_timer(EntityWorld& world,
                                            const TimerDesc& desc, 
                                            const OnTimerRunoutFn& runout_func, 
                                            void* user_data = nullptr);
-
-/// A helper function to add a UI layout component to `entt`, with the `layout_func` 
-/// that will be called in UI frames, passing in `user_data`.
-FREYA_API UILayoutComponent& entity_add_ui_layout(EntityWorld& world, 
-                                                  EntityID& entt, 
-                                                  const OnUILayoutFn& layout_func, 
-                                                  void* user_data = nullptr);
-
-/// A helper function to add a sprite component to `entt`, using the given
-/// `texture_id`, `source`, `color`, and `layer` to give to the render command.
-FREYA_API SpriteComponent& entity_add_sprite(EntityWorld& world, 
-                                             EntityID& entt, 
-                                             const AssetID& texture_id, 
-                                             const Vec4& color    = Vec4(1.0f), 
-                                             const Rect2D& source = {}, 
-                                             const i32 layer      = -1);
-
-/// A helper function to add a static body to `entt`, using the information 
-/// in `desc`, and `enter_func`, and `exit_func`, to call later on collision events. 
-///
-/// @NOTE: The position, rotation, type, and user data of the given `desc` will be
-/// set inside the function using the transform of `entt` and its ID respectively.
-/// The type, too, will be set as `PHYSICS_BODY_STATIC`.
-/// However, the rest of the memebers of `desc` must be filled by the caller.
-FREYA_API StaticBodyComponent& entity_add_static_body(EntityWorld& world, 
-                                                      EntityID& entt, 
-                                                      PhysicsBodyDesc& desc, 
-                                                      const OnCollisionFn& enter_func = nullptr, 
-                                                      const OnCollisionFn& exit_func  = nullptr);
-
-/// A helper function to add a dynamic body to `entt`, using the information 
-/// in `desc`, and `enter_func`, and `exit_func`, to call later on collision events. 
-///
-/// @NOTE: The position, rotation, and user data of the given `desc` will be
-/// set inside the function using the transform of `entt` and its ID respectively.
-/// However, the rest of the memebers of `desc` must be filled by the caller.
-///
-/// Important to note that the type of the body MUST be either `PHYSICS_BODY_DYNAMIC` or `PHYSICS_BODY_KINEMATIC`.
-FREYA_API DynamicBodyComponent& entity_add_dynamic_body(EntityWorld& world, 
-                                                        EntityID& entt, 
-                                                        PhysicsBodyDesc& desc, 
-                                                        const OnCollisionFn& enter_func = nullptr, 
-                                                        const OnCollisionFn& exit_func  = nullptr);
-
-/// A helper function to add an animation component to `entt`, using the given 
-/// `desc` and `tint`.
-FREYA_API AnimationComponent& entity_add_animation(EntityWorld& world, 
-                                                   EntityID& entt, 
-                                                   const AnimationDesc& desc, 
-                                                   const Vec4& tint = Vec4(1.0f));
-
-/// A helper function to add an animator component to `entt`.
-FREYA_API Animator& entity_add_animator(EntityWorld& world, EntityID& entt);
-
-/// A helper function to call the on enter collision function for the given `entt` if it's available, 
-/// passing in `other` and `normal`, and returning `true` if the function was successfully called, and `false` otherwise
-FREYA_API bool entity_on_collision_enter(EntityWorld& world, EntityID& entt, EntityID& other, const Vec2& normal, void* user_data);
-
-/// A helper function to call the on exit collision function for the given `entt` if it's available, 
-/// passing in `other` and `normal`, and returning `true` if the function was successfully called, and `false` otherwise
-FREYA_API bool entity_on_collision_exit(EntityWorld& world, EntityID& entt, EntityID& other, const Vec2& normal, void* user_data);
 
 /// Retrieve a reference to a generic component `Comp` from `entt` that lives in the given `world`.
 ///

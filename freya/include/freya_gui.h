@@ -143,35 +143,8 @@ FREYA_API void gui_edit_audio_listener(const char* name);
 /// Add a timer section identified by `name` to edit the given `timer`.
 FREYA_API void gui_edit_timer(const char* name, Timer* timer);
 
-/// Add an animation section identified by `name` to edit the given `anim`.
-FREYA_API void gui_edit_animation(const char* name, Animation* anim);
-
-/// Add an animator section identified by `name` to edit the given `anim`.
-FREYA_API void gui_edit_animator(const char* name, Animator* anim);
-
-/// Add a particle emitter section identified by `name` to edit the given `emitter`.
-FREYA_API void gui_edit_particle_emitter(const char* name, ParticleEmitter* emitter);
-
-/// Add a physics body section identified by `name` to edit the given `body`.
-FREYA_API void gui_edit_physics_body(const char* name, PhysicsBodyID& body);
-
 /// Add a noise generator section identified by `name` to edit the given `gen`.
 FREYA_API void gui_edit_noise_generator(const char* name, NoiseGenerator* gen);
-
-/// Add a UI text section identified by `name` to edit the given `text`.
-FREYA_API void gui_edit_ui_text(const char* name, UIText* text);
-
-/// Add a UI sprite section identified by `name` to edit the given `sprite`.
-FREYA_API void gui_edit_ui_sprite(const char* name, UISprite* sprite);
-
-/// Add a UI button section identified by `name` to edit the given `button`.
-FREYA_API void gui_edit_ui_button(const char* name, UIButton* button);
-
-/// Add a sprite component section identified by `name` to edit the given `sprite`.
-FREYA_API void gui_edit_sprite_component(const char* name, SpriteComponent* sprite);
-
-/// Add a poisson disk section identified by `name` to edit the given `disk`.
-FREYA_API void gui_edit_poisson_disk(const char* name, PoissonDiskDesc* disk);
 
 /// Add an entity section identified by `name` to edit the given `entt`.
 FREYA_API void gui_edit_entity(const char* name, EntityWorld& world, EntityID& entt);

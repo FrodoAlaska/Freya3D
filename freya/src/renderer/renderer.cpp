@@ -2,7 +2,6 @@
 #include "freya_logger.h"
 #include "freya_event.h"
 #include "freya_entity.h"
-#include "freya_physics.h"
 
 #include "shaders/default_pass_shader.h"
 
@@ -19,24 +18,22 @@ namespace freya { // Start of freya
 ///---------------------------------------------------------------------------------------------------------------------
 /// Renderer
 struct Renderer {
+  /// Defaults 
+
+  RendererDefaults defaults;
+
+  /// Per-frame state
+
   Window* window = nullptr;
-
-  sg_sampler default_sampler;
-  sg_buffer vertex_buffer;
-
-  Color color = Color(1.0f);
-  DynamicArray<PostProcessPass*> passes;
-
-  sg_pass_action pass_action;
-  sg_pass pass;
-
-  sg_pipeline pipeline;
-
+  Color color    = Color(1.0f);
+  
   AssetGroupID group_id = ASSET_CACHE_ID;
   EntityWorld* world    = nullptr;
 
   Camera* main_cam = nullptr;
   bool can_sort    = false;
+
+  /// UI
 
   FONScontext* fons = nullptr;
 };
@@ -49,17 +46,7 @@ static Renderer s_renderer;
 /// Callbacks
 
 static bool window_resized_callback(const Event& event, const void* dispatcher, const void* listener) {
-  // Resize each render pass
-  
-  for(PostProcessPass* pass : s_renderer.passes) {
-    if(!pass->resize_func) {
-      continue;
-    }
-    
-    pass->resize_func(pass, event.window_framebuffer_size);
-  }
-
-  // Done!
+  // @TODO (Renderer/resize) 
   return true;
 }
 
@@ -93,46 +80,123 @@ static void sg_logger_func(const char* tag,
 ///---------------------------------------------------------------------------------------------------------------------
 /// Private functions
 
-static void swapchain_pass_prepare() {
-  // Set up the swapchain 
+static void init_defaults() {
+  //
+  // Textures init
+  //
+  {
+    AssetID texture_ids[] = {
+      asset_group_push_texture(s_renderer.group_id, MATERIAL_TEXTURE_DIFFUSE),
+      asset_group_push_texture(s_renderer.group_id, MATERIAL_TEXTURE_SPECULAR),
+      asset_group_push_texture(s_renderer.group_id, MATERIAL_TEXTURE_NORMAL),
+      asset_group_push_texture(s_renderer.group_id, MATERIAL_TEXTURE_EMISSIVE),
+    };
 
-  s_renderer.pass_action.colors[0].clear_value = {
-    .r = s_renderer.color.r,
-    .g = s_renderer.color.g,
-    .b = s_renderer.color.b,
-    .a = s_renderer.color.a,
-  }; 
+    s_renderer.defaults.diffuse_map  = asset_group_get_texture(texture_ids[0]);
+    s_renderer.defaults.specular_map = asset_group_get_texture(texture_ids[1]);
+    s_renderer.defaults.normal_map   = asset_group_get_texture(texture_ids[2]);
+    s_renderer.defaults.emissive_map = asset_group_get_texture(texture_ids[3]);
 
-  s_renderer.pass.action    = s_renderer.pass_action;
-  s_renderer.pass.swapchain = renderer_get_default_swapchain();
+    // Material init
 
-  // Begin the pass
-  sg_begin_pass(&s_renderer.pass);
-}
-
-static void swapchain_pass_commit(PostProcessPass* current_pass) {
-  if(current_pass) {
-    // Set up the bindings of the pass 
-    sg_bindings bindings = {};
-
-    // Use the final texture image of the current pass
-    
-    bindings.views[0] = current_pass->outputs[0];
-
-    bindings.vertex_buffers[0] = s_renderer.vertex_buffer;
-    bindings.samplers[0]       = s_renderer.default_sampler;
-
-    // Apply the bindings and the pipeline
-
-    sg_apply_pipeline(s_renderer.pipeline);
-    sg_apply_bindings(bindings);
-
-    // Render the screen-space post-process effect
-    sg_draw(0, 6, 1);
+    MaterialDesc mat_desc = {
+      .diffuse_id  = texture_ids[0], 
+      .specular_id = texture_ids[1], 
+      .normal_id   = texture_ids[2], 
+      .emissive_id = texture_ids[3], 
+    };
+    s_renderer.defaults.material = asset_group_get_material(asset_group_push_material(s_renderer.group_id, mat_desc));
   }
 
-  // End the swapchain pass
-  sg_end_pass();
+  //
+  // Quad mesh init
+  // 
+  {
+    f32 vertices[] = {
+      -1.0f, -1.0f, 0.0f, 0.0f,
+       1.0f, -1.0f, 1.0f, 0.0f,
+       1.0f,  1.0f, 1.0f, 1.0f,
+      -1.0f,  1.0f, 0.0f, 1.0f,
+    };
+
+    u16 indices[] = {
+      0, 1, 2, 
+      2, 3, 0
+    };
+
+    sg_buffer_desc vert_desc = {};
+    vert_desc.data           = SG_RANGE(vertices);
+    
+    sg_buffer_desc idx_desc     = {};
+    idx_desc.usage.index_buffer = true;
+    idx_desc.data               = SG_RANGE(indices);
+
+    s_renderer.defaults.quad_mesh = asset_group_get_mesh(asset_group_push_mesh(s_renderer.group_id, vert_desc, idx_desc, 6));
+  }
+  
+  //
+  // Skybox mesh init
+  // 
+  {
+    f32 vertices[] = {
+      -1.0f, -1.0f, -1.0f,
+       1.0f, -1.0f, -1.0f,
+       1.0f,  1.0f, -1.0f,
+      -1.0f,  1.0f, -1.0f,
+
+      -1.0f, -1.0f,  1.0f,
+       1.0f, -1.0f,  1.0f,
+       1.0f,  1.0f,  1.0f,
+      -1.0f,  1.0f,  1.0f,
+
+      -1.0f, -1.0f, -1.0f,
+      -1.0f,  1.0f, -1.0f,
+      -1.0f,  1.0f,  1.0f,
+      -1.0f, -1.0f,  1.0f,
+
+       1.0f, -1.0f, -1.0f,
+       1.0f,  1.0f, -1.0f,
+       1.0f,  1.0f,  1.0f,
+       1.0f, -1.0f,  1.0f,
+
+      -1.0f, -1.0f, -1.0f,
+      -1.0f, -1.0f,  1.0f,
+       1.0f, -1.0f,  1.0f,
+       1.0f, -1.0f, -1.0f,
+
+      -1.0f,  1.0f, -1.0f,
+      -1.0f,  1.0f,  1.0f,
+       1.0f,  1.0f,  1.0f,
+       1.0f,  1.0f, -1.0f,
+    };
+
+    u16 indices[] = {
+      0, 1, 2,  
+      0, 2, 3,
+      6, 5, 4, 
+      7, 6, 4,
+      8, 9, 10,  
+      8, 10, 11,
+      14, 13, 12,  
+      15, 14, 12,
+      16, 17, 18,  
+      16, 18, 19,
+      22, 21, 20,  
+      23, 22, 20
+    };
+    
+    sg_buffer_desc vert_desc = {};
+    vert_desc.data           = SG_RANGE(vertices);
+    
+    sg_buffer_desc idx_desc     = {};
+    idx_desc.usage.index_buffer = true;
+    idx_desc.data               = SG_RANGE(indices);
+
+    s_renderer.defaults.skybox_mesh = asset_group_get_mesh(asset_group_push_mesh(s_renderer.group_id, vert_desc, idx_desc, 36));
+  }
+
+  // Sampler init 
+  s_renderer.defaults.sampler = sg_make_sampler(sg_sampler_desc{});
 }
 
 /// Private functions
@@ -184,64 +248,8 @@ void renderer_init(Window* window) {
   };
   s_renderer.fons = sfons_create(&fons_desc);
 
-  // Default sampler init
-
-  sg_sampler_desc sampler_desc = {};
-  s_renderer.default_sampler   = sg_make_sampler(sampler_desc);
-
-  // Vertex buffer init
-
-  f32 vertices[] = {
-    -1.0f, -1.0f, 0.0f, 0.0f,
-     1.0f, -1.0f, 1.0f, 0.0f,
-     1.0f,  1.0f, 1.0f, 1.0f,
-    
-     1.0f,  1.0f, 1.0f, 1.0f,
-    -1.0f,  1.0f, 0.0f, 1.0f,
-    -1.0f, -1.0f, 0.0f, 0.0f,
-  };
-
-  sg_buffer_desc buff_desc = {
-    .data = SG_RANGE(vertices),
-  };
-  s_renderer.vertex_buffer = sg_make_buffer(buff_desc);
-
-  // Default pass init
-  
-  PostProcessPassDesc pass_desc = {
-    .frame_size    = window_get_size(s_renderer.window),
-    .clear_color   = Color(0.1f, 0.1f, 0.1f, 1.0f),
-    .shader_id     = asset_group_push_shader(s_renderer.group_id, *default_pass_shader_desc(sg_query_backend())),
-    .group_id      = s_renderer.group_id,
-    .samples_count = window_get_samples_count(s_renderer.window),
-    .debug_name    = "Default",
-  };
-
-  pass_desc.attachments.emplace_back(SG_PIXELFORMAT_RGBA8);
-  pass_desc.attachments.emplace_back(SG_PIXELFORMAT_DEPTH_STENCIL);
-
-  PostProcessPass* default_pass = post_process_create(s_renderer.window, pass_desc);
-  renderer_push_post_process(default_pass);
-
-  default_pass->outputs[0]    = default_pass->attachments[0];
-  default_pass->outputs_count = 1;
- 
-  // Default pipeline init 
-  
-  sg_pipeline_desc pipe_desc = {};
-  
-  pipe_desc.depth.compare       = SG_COMPAREFUNC_LESS_EQUAL;
-  pipe_desc.depth.write_enabled = true;
-
-  pipe_desc.shader = asset_group_get_shader(pass_desc.shader_id); // Same shader as the default post-process pass
-
-  pipe_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT2; // Position
-  pipe_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT2; // Texture coords
-
-  s_renderer.pipeline = sg_make_pipeline(pipe_desc);
-
   // Listen to events
-  
+   
   event_register(EVENT_WINDOW_MAXIMIZED, window_resized_callback);
   event_register(EVENT_WINDOW_FRAMEBUFFER_RESIZED, window_resized_callback);
   event_register(EVENT_WINDOW_FULLSCREEN, window_resized_callback);
@@ -251,13 +259,6 @@ void renderer_init(Window* window) {
 }
 
 void renderer_shutdown() {
-  // Destroy the framebuffers
-
-  for(PostProcessPass* pass : s_renderer.passes) {
-    post_process_destroy(pass);
-  }
-  s_renderer.passes.clear();
-
   // GFX shutdown
 
   sfons_destroy(s_renderer.fons);
@@ -278,40 +279,6 @@ void renderer_sumbit_world(EntityWorld* world) {
   s_renderer.world = world;
 }
 
-void renderer_push_post_process(PostProcessPass* pass) {
-  FREYA_DEBUG_ASSERT(pass, "");
-
-  // Push the pass to the back and set its previous
-
-  if(!s_renderer.passes.empty()) {
-    pass->previous = s_renderer.passes.back();
-  }
-
-  s_renderer.passes.push_back(pass);
-
-  // Some useful info
-  FREYA_LOG_TRACE("Pushed post-process \'%s\' to the chain", pass->debug_name.c_str());
-}
-
-PostProcessPass* renderer_pop_post_process() {
-  // We only have the default pass left, so do not pop anymore
-
-  if(s_renderer.passes.size() == 1) {
-    FREYA_LOG_TRACE("Could not pop anymore passes");
-    return nullptr;
-  }
-
-  // Pop the pass, otherwise
-
-  PostProcessPass* pass = s_renderer.passes.back();
-  s_renderer.passes.pop_back();
-
-  // Done!
-
-  FREYA_LOG_TRACE("Popped post-process \'%s\' from the chain", pass->debug_name.c_str());
-  return pass;
-}
-
 void renderer_set_clear_color(const Color& color) {
   s_renderer.color = color;
 }
@@ -322,10 +289,6 @@ void renderer_set_sort(bool sort) {
 
 const Color& renderer_get_clear_color() {
   return s_renderer.color;
-}
-
-u32 renderer_get_post_process_count() {
-  return (u32)s_renderer.passes.size();
 }
 
 sg_swapchain renderer_get_default_swapchain() {
@@ -346,131 +309,8 @@ AssetGroupID& renderer_get_asset_group_id() {
   return s_renderer.group_id;
 }
 
-void renderer_queue_texture(const Texture& texture, 
-                            const Rect2D& src, 
-                            const Rect2D& dest, 
-                            const f32 rotation,
-                            const Color& tint) {
-  sgp_set_color(tint.r, tint.g, tint.b, tint.a);
-  sgp_rotate_at(rotation, dest.position.x, dest.position.y);
-
-  Vec2 src_pos  = src.position;
-  Vec2 src_size = src.size;
-
-  Vec2 dest_pos  = dest.position - (dest.size / 2.0f);
-  Vec2 dest_size = dest.size; 
-
-  sgp_set_view(0, texture.view);
-  sgp_set_sampler(0, texture.sampler);
-
-  sgp_draw_textured_rect(0, 
-                         {dest_pos.x, dest_pos.y, dest_size.x, dest_size.y},
-                         {src_pos.x, src_pos.y, src_size.x, src_size.y}); 
-
-  sgp_reset_view(0);
-  sgp_reset_sampler(0);
-}
-
-void renderer_queue_texture(const Texture& texture, const Transform& transform, const Color& tint) {
-  Rect2D src = {
-    .size     = texture.size,
-    .position = Vec2(0.0f),
-  };
-  
-  Rect2D dest = {
-    .size     = transform.scale,
-    .position = transform.position, 
-  };
-
-  renderer_queue_texture(texture, src, dest, transform.rotation, tint);
-}
-
-void renderer_queue_quad(const Transform& transform, const Color& color) {
-  sgp_set_color(color.r, color.g, color.b, color.a);
-  sgp_rotate_at(transform.rotation, transform.position.x, transform.position.y);
-  
-  Vec2 center = transform.position - (transform.scale / 2.0f);
-  sgp_draw_filled_rect(center.x, center.y, transform.scale.x, transform.scale.y);
-}
-
-void renderer_queue_line(const Vec2& start, const Vec2& end, const Color& color) {
-  sgp_set_color(color.r, color.g, color.b, color.a);
-  sgp_draw_line(start.x, start.y, end.x, end.y);
-}
-
-void renderer_queue_point(const Vec2& position, f32 size, const Color& color) {
-  sgp_set_color(color.r, color.g, color.b, color.a);
-  sgp_scale(size, size);
-
-  sgp_draw_point(position.x, position.y);
-}
-
-void renderer_queue_triangle(const Vec2& p1, const Vec2& p2, const Vec2& p3, const Color& color) {
-  sgp_set_color(color.r, color.g, color.b, color.a);
-  sgp_draw_filled_triangle(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
-}
-
-void renderer_queue_triangles_strip(const Transform& transform, const DynamicArray<Vec2>& vertices, const Color& color) {
-  sgp_set_color(color.r, color.g, color.b, color.a);
-  sgp_push_transform();
-
-  sgp_translate(transform.position.x, transform.position.y);
-  sgp_rotate(transform.rotation);
-  sgp_scale(transform.scale.x, transform.scale.y);
-
-  // @TEMP (Renderer)
-
-  DynamicArray<sgp_point> sgp_points(vertices.size());
-  for(sizei i = 0; i < sgp_points.size(); i++) {
-    sgp_points[i] = sgp_point{vertices[i].x, vertices[i].y};
-  }
-
-  sgp_draw_filled_triangles_strip(sgp_points.data(), vertices.size());
-  sgp_pop_transform();
-}
-
-void renderer_queue_animation(const Animation& anim, const Transform& transform, const Color& tint) {
-  Rect2D dest = {
-    .size     = anim.frame_size * transform.scale,
-    .position = transform.position, 
-  };
-  renderer_queue_texture(anim.texture, anim.src_rect, dest, transform.rotation, tint);
-}
-
-void renderer_queue_particles(const ParticleEmitter& emitter) {
-  if(!emitter.is_active) {
-    return;
-  }
-
-  for(sizei i = 0; i < emitter.particles_count; i++) {
-    if(emitter.texture.id != -1) {
-      renderer_queue_texture(emitter.texture, emitter.transforms[i], emitter.color);
-      continue;
-    }
-
-    renderer_queue_quad(emitter.transforms[i], emitter.color);
-  }
-}
-
-void renderer_queue_text(UIText& text) {
-  // Calculating the correct color
-
-  IVec4 ucolor  = (IVec4)(text.color * 255.0f);
-  u32 hex_color = sfons_rgba(ucolor.r, ucolor.g, ucolor.b, ucolor.a); 
-
-  fonsSetSize(s_renderer.fons, text.size);
-  fonsSetColor(s_renderer.fons, hex_color);
-  fonsSetSpacing(s_renderer.fons, text.spacing);
-  fonsSetBlur(s_renderer.fons, text.blur);
-  fonsSetAlign(s_renderer.fons, text.align);
-  fonsSetFont(s_renderer.fons, text.font->_id);
-
-  if(text.is_sticky) {
-    ui_text_place(text);
-  }
-
-  // Draw
-  fonsDrawText(s_renderer.fons, text.position.x, text.position.y, text.string.c_str(), nullptr);
+const RendererDefaults& renderer_get_defaults() {
+  return s_renderer.defaults;
 }
 
 void renderer_prepare() {
@@ -483,12 +323,6 @@ void renderer_prepare() {
 
   IVec2 frame_size = window_get_framebuffer_size(s_renderer.window);
   IVec2 size       = window_get_size(s_renderer.window);
-
-  // SGP begin
-
-  sgp_begin(size.x, size.y);
-  sgp_project(0.0f, (f32)frame_size.x, 0.0f, (f32)frame_size.y);
-  sgp_set_blend_mode(SGP_BLENDMODE_BLEND);
 
   // 
   // Gather the frame data 
@@ -506,368 +340,20 @@ void renderer_prepare() {
   // Projecting the scene using the camera if it was found 
 
   if(s_renderer.main_cam) {
-    sgp_project(0.0f, (f32)s_renderer.main_cam->view_bounds.x, 0.0f, (f32)s_renderer.main_cam->view_bounds.y);
-    sgp_push_transform();
-
-    Camera* camera = s_renderer.main_cam;
-
-    sgp_translate(-camera->position.x, -camera->position.y);
-    sgp_rotate(camera->rotation);
-    sgp_scale(camera->zoom, camera->zoom);
+    // @TODO (Renderer/camera)
   }
 
   // 
   // Prepare the frame 
   //
-
-  // Clear
-
-  sgp_set_color(s_renderer.color.r, s_renderer.color.g, s_renderer.color.b, s_renderer.color.a);
-  sgp_clear();
-
-  // Either start the post-processing chain if there are 
-  // more than the default pass available, or just prepare 
-  // the default swapchain for normal rendering.
-  
-  if(s_renderer.passes.size() > 1) {
-    PostProcessPass* pass = s_renderer.passes[0];
-
-    sg_begin_pass(&pass->pass);
-    sg_apply_viewport(0, 0, pass->frame_size.x, pass->frame_size.y, true);
-  }
-  else {
-    swapchain_pass_prepare();
-  }
-
-  // 
-  // Gather the draw calls 
-  //
-
-  // Sprites
-  {
-    // Check if we need to sort the view first
-
-    if(s_renderer.can_sort) {
-      auto sort_fn = [&](const SpriteComponent& a, const SpriteComponent& b) {
-        return a.layer < b.layer;
-      };
-
-      s_renderer.world->sort<SpriteComponent>(sort_fn);
-    }
-    
-    // Render each sprite
-
-    auto view = world->view<SpriteComponent, Transform>();
-    for(auto entt : view) {
-      const Transform& transform    = view.get<Transform>(entt);
-      const SpriteComponent& sprite = view.get<SpriteComponent>(entt);
-
-      // Setup the dest rect
-
-      Rect2D dest = {
-        .size     = transform.scale,
-        .position = transform.position,
-      };
-
-      // Render a texture (if it's a valid)
-
-      if(sprite.texture.id != -1) {
-        renderer_queue_texture(sprite.texture, sprite.source_rect, dest, transform.rotation, sprite.color);
-        continue;
-      }
-
-      // Render a regular quad
-      renderer_queue_quad(transform, sprite.color);
-    }
-  }
-  
-  // Animations
-  {
-    auto view = world->view<AnimationComponent, Transform>();
-    for(auto entt : view) {
-      const Transform& transform     = view.get<Transform>(entt);
-      const AnimationComponent& anim = view.get<AnimationComponent>(entt);
-
-      renderer_queue_animation(anim.animation, transform, anim.tint);
-    }
-  }
-  
-  // Animators
-  {
-    auto view = world->view<Animator, Transform>();
-    for(auto entt : view) {
-      const Transform& transform = view.get<Transform>(entt);
-      const Animator& anim       = view.get<Animator>(entt);
-
-      if(!anim.animations.empty()) {
-        renderer_queue_animation(anim.animations[anim.current_animation], transform, Vec4(1.0f));
-      }
-    }
-  }
-
-  // ParticleEmitters
-  {
-    auto view = world->view<ParticleEmitter>();
-    for(auto entt : view) {
-      const ParticleEmitter& emitter = view.get<ParticleEmitter>(entt);
-      renderer_queue_particles(emitter);
-    }
-  }
-
-  // Physics (@TODO: Not the best place to put this??)
-  {
-    if(physics_world_is_debug()) {
-      physics_world_draw_debug();
-    }
-  }
-
-  // Reset the camera's view
-
-  if(s_renderer.main_cam) {
-    sgp_pop_transform();
-  }
-
-  // UIText
-  {
-    // Check if we need to sort the view first
-
-    if(s_renderer.can_sort) {
-      auto sort_fn = [&](const UIText& a, const UIText& b) {
-        return a.layer < b.layer;
-      };
-
-      s_renderer.world->sort<UIText>(sort_fn);
-    }
-
-    // Render each UI sprite
-    
-    auto view = world->view<UIText, Transform>();
-    for(auto entt : view) {
-      Transform& transform = view.get<Transform>(entt);
-      UIText& text         = view.get<UIText>(entt);
-
-      // Skip inactive texts
-
-      if(!text.is_active) {
-        continue;
-      }
-
-      // Manage the state of the text
-
-      text.offset = transform.position;
-      text.size   = transform.scale.x;
-
-      // Draw 
-      
-      sgl_rotate(transform.rotation, 0.0f, 0.0f, 1.0f);
-      renderer_queue_text(text);
-    }
-  }
-  
-  // UISprite
-  {
-    // Check if we need to sort the view first
-
-    if(s_renderer.can_sort) {
-      auto sort_fn = [&](const UISprite& a, const UISprite& b) {
-        return a.layer < b.layer;
-      };
-
-      s_renderer.world->sort<UISprite>(sort_fn);
-    }
-
-    // Render each UI sprite
-    
-    auto view = world->view<UISprite, Transform>();
-    for(auto entt : view) {
-      Transform& transform = view.get<Transform>(entt);
-      UISprite& sprite     = view.get<UISprite>(entt);
-
-      // Skip inactive sprites
-
-      if(!sprite.is_active) {
-        continue;
-      }
-
-      // Apply the settings of the transform to the sprite      
-
-      sprite.offset = transform.position;
-      sprite.size   = transform.scale;
-      
-      ui_sprite_place(sprite);
-      
-      // Render a texture (if it's a valid)
-
-      Transform sprite_trans = {
-        .position = sprite.position,
-        .scale    = sprite.size, 
-        .rotation = transform.rotation,
-      };
-
-      if(sprite.texture.id != -1) {
-        renderer_queue_texture(sprite.texture, sprite_trans, sprite.color);
-        continue;
-      }
-
-      // Render a regular quad
-      renderer_queue_quad(sprite_trans, sprite.color);
-    }
-  }
-  
-  // UIButton
-  {
-    // Check if we need to sort the view first
-
-    if(s_renderer.can_sort) {
-      auto sort_fn = [&](const UIButton& a, const UIButton& b) {
-        return a.layer < b.layer;
-      };
-
-      s_renderer.world->sort<UIButton>(sort_fn);
-    }
-
-    // Render each UI button
-    
-    auto view = world->view<UIButton, Transform>();
-    for(auto entt : view) {
-      Transform& transform = view.get<Transform>(entt);
-      UIButton& button     = view.get<UIButton>(entt);
-
-      // Skip inactive buttons
-
-      if(!button.is_active) {
-        continue;
-      }
-
-      // Some states change when the button is hovered 
-      // so make sure to check for it before anything 
-      ui_button_hovered(button);
-
-      // Apply the settings of the transform to the button      
-
-      button.offset = transform.position;
-
-      button.size.x = transform.scale.x;
-      button.size.y = transform.scale.y;
-      
-      ui_button_place(button);
-
-      // Render the outline
-      
-      Transform button_trans = {
-        .position = button.position,
-        .scale    = Vec2(button.size) + button.size.z, 
-        .rotation = transform.rotation,
-      };
-      renderer_queue_quad(button_trans, button.outline_color);
-      
-      // Render the texture itself
-
-      button_trans = {
-        .position = button.position,
-        .scale    = Vec2(button.size), 
-        .rotation = transform.rotation,
-      };
-
-      if(button.texture.id != -1) { // Render the texture
-        renderer_queue_texture(button.texture, button_trans, button.color);
-      }
-      else { // Render a regular quad
-        renderer_queue_quad(button_trans, button.color);
-      }
-
-      // Render the text 
-      renderer_queue_text(button.text);
-    }
-  }
-
-
-  // Clean slate
-  s_renderer.can_sort = false;
+  // @TODO (Renderer/draw)
 }
 
 void renderer_commit() {
   FREYA_PROFILE_FUNCTION();
-  
-  // Reset the painter's state
-  sgp_reset_blend_mode();
-
-  // End the painter 
-  
-  sgp_flush();
-  sgp_end();
  
-  // End the font painter
-
-  sgl_defaults();
-  sgl_matrix_mode_projection();
-
-  IVec2 frame_size = window_get_framebuffer_size(s_renderer.window);
-  sgl_ortho(0.0f, (f32)frame_size.x, (f32)frame_size.y, 0.0f, -1.0f, 1.0f);
-
-  sfons_flush(s_renderer.fons);
-  sgl_draw();
-
-  // End the default post-processing pass if we are 
-  // currently expected to walk that chain 
-
-  if(s_renderer.passes.size() > 1) {
-    sg_end_pass(); // Should be the default post-process pass
-  }
-
-  // Initiate the post-processing pipeline
-
-  PostProcessPass* current_pass = nullptr;
-  for(sizei i = 1; i < s_renderer.passes.size(); i++) { // Skip the default pass
-    // Prepare the pass
-    
-    PostProcessPass* pass = s_renderer.passes[i];
-    sg_begin_pass(&pass->pass);
-    sg_apply_viewport(0, 0, pass->frame_size.x, pass->frame_size.y, true);
-
-    // Set up the bindings of the pass 
-    sg_bindings bindings = {};
-
-    // Use the outputs of the previous pass
-     
-    PostProcessPass* previous = pass->previous;
-    for(u32 i = 0; i < previous->outputs_count; i++) {
-      bindings.views[i] = previous->outputs[i];
-    }
-
-    bindings.vertex_buffers[0] = s_renderer.vertex_buffer;
-    bindings.samplers[0]       = s_renderer.default_sampler;
-
-    // Apply the bindings and the pipeline
-    
-    sg_apply_pipeline(pass->pipeline);
-    sg_apply_bindings(bindings);
-
-    if(pass->prepare_func) {
-      pass->prepare_func(pass);
-    }
-
-    // Render the screen-space post-process effect
-    sg_draw(0, 6, 1);
-
-    // End the pass
-    sg_end_pass();
-
-    // Set the current pass to render later
-    current_pass = pass; 
-  }
-
-  // Only prepare the default swapchain if we have some 
-  // post-processing passes to go through. If there aren't any, 
-  // then the default swapchain was already prepared at the start of the frame.
-
-  if(current_pass) {
-    swapchain_pass_prepare();
-  }
-
-  // Draw the final image to the swapchain
-  swapchain_pass_commit(current_pass);
-
+  // @TODO (Renderer/commit)
+  
   // Done with this frame... 
   sg_commit();
 

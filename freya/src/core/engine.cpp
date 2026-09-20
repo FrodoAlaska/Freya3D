@@ -48,7 +48,6 @@ static bool on_app_quit(const Event& event, const void* dispatcher, const void* 
 static void start_shutdown() {
   CHECK_VALID_CALLBACK(s_engine.app_desc.shutdown_fn);
 
-  physics_world_shutdown();
   audio_device_shutdown();
   asset_manager_shutdown();
   
@@ -61,9 +60,6 @@ static void start_shutdown() {
 static void update_and_render() {
   // Poll for input events
   window_poll_events(s_engine.window);
-
-  // Physics world update
-  physics_world_step();
 
   // Update
   CHECK_VALID_CALLBACK(s_engine.app_desc.update_fn, clock_get_delta_time());
@@ -173,9 +169,6 @@ i32 engine_run(const AppDesc& desc) {
 
   // Audio init
   audio_device_init(nullptr);
-
-  // Physics world init
-  physics_world_init(Vec2(0.0f, 9.81f));
 
   // Check for any command line arguments
   

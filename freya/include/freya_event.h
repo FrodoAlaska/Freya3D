@@ -1,6 +1,5 @@
 #pragma once
 
-#include "freya_ui.h"
 #include "freya_entity.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -50,14 +49,6 @@ enum EventType {
   /// Asset events
   
   EVENT_ASSET_GROUP_LOADED,
-
-  /// Physics events
-
-  EVENT_PHYSICS_CONTACT_ADDED,
-  EVENT_PHYSICS_CONTACT_REMOVED,
-  
-  EVENT_PHYSICS_SENSOR_CONTACT_ADDED,
-  EVENT_PHYSICS_SENSOR_CONTACT_REMOVED,
 
   /// Entity events
   
@@ -124,16 +115,6 @@ struct Event {
 
   /// The asset group ID sent with the `EVENT_ASSET_GROUP_LOADED` event.
   AssetGroupID group_id;
-
-  /// The collision data given to this event 
-  /// by either `EVENT_PHYSICS_CONTACT_ADDED` or
-  /// `EVENT_PHYSICS_CONTACT_REMOVED`. 
-  CollisionData collision_data;
-
-  /// The sensor collision data given to this event 
-  /// by either `EVENT_PHYSICS_SENSOR_CONTACT_ADDED` or
-  /// `EVENT_PHYSICS_SENSOR_CONTACT_REMOVED`. 
-  SensorCollisionData sensor_data;
 
   /// The entity given to this event by 
   /// either `EVENT_ENTITY_ADDED` or `EVENT_ENTITY_DESTROYED`.

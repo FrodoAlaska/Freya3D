@@ -135,20 +135,21 @@ typedef glm::quat Quat;
 ///---------------------------------------------------------------------------------------------------------------------
 /// Transform
 struct Transform {
-  Vec2 position = Vec2(0.0f); 
-  Vec2 scale    = Vec2(1.0f);
-  f32 rotation  = 0.0f;
+  Vec3 position = Vec3(0.0f); 
+  Vec3 scale    = Vec3(1.0f);
+  Quat rotation = Quat(1.0f, 0.0f, 0.0f, 0.0f);
 };
 /// Transform
 ///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------
-/// Vertex2D
-struct Vertex2D {
-  Vec2 position; 
-  Vec2 normal;
-  Vec2 texture_coords;
-  Vec4 color;
+/// Vertex3D
+struct Vertex3D {
+  Vec3 position = Vec3(0.0f); 
+  Vec3 normal   = Vec3(0.0f);
+  Vec3 tangent  = Vec3(0.0f);
+  
+  Vec2 texture_coords = Vec2(0.0f);
 };
 /// Vertex3D
 ///---------------------------------------------------------------------------------------------------------------------
@@ -160,35 +161,6 @@ struct Rect2D {
   Vec2 position = Vec2(0.0f);
 };
 /// Rect2D
-///---------------------------------------------------------------------------------------------------------------------
-
-///---------------------------------------------------------------------------------------------------------------------
-/// PoissonDiskDesc
-struct PoissonDiskDesc {
-  /// The radius of each point in the grid. 
-  ///
-  /// @NOTE: The default value is `1.0f`.
-  f32 radius         = 1.0f; 
-
-  /// The number of iterations a cell goes 
-  /// through before getting rejected 
-  /// entirely (if it failed to find a new candidate).
-  ///
-  /// @NOTE: The default value is `30`.
-  i32 num_iterations = 30;
-
-  /// The starting point of the algorithm.
-  ///
-  /// @NOTE: The default value is `Vec2(0.0f, 0.0f)`.
-  Vec2 start_point = Vec2(0.0f);
-
-  /// The size of the whole region the algorithm 
-  /// will be operating inside. 
-  ///
-  /// @NOTE: The default value is `Vec2(32.0f, 32.0f)`.
-  Vec2 region_size = Vec2(32.0f);
-};
-/// PoissonDiskDesc
 ///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------
@@ -462,10 +434,6 @@ FREYA_API const Mat4 mat4_rotate(const Vec3& axis, const f32 angle);
 /// Returns the sclae matrix affected by `scale`
 FREYA_API const Mat4 mat4_scale(const Vec3& scale);
 
-/// Return a matrix that has been translated, rotated, 
-/// and scaled according to `transform`.
-FREYA_API const Mat4 mat4_transform(const Transform& transform);
-
 /// Generates a 4x4 matrix for a symmetric perspective view frustrum, using the left hand coordinate system.
 ///
 /// @NOTE: The fov is in radians.
@@ -537,26 +505,56 @@ FREYA_API const Vec3 quat_to_euler(const Quat& q);
 ///---------------------------------------------------------------------------------------------------------------------
 /// Transform functions
 
-/// Lerp between the two given transforms `trans_a` and `trans_b` by the given `delta` value.
-FREYA_API void transform_lerp(Transform& trans_a, const Transform& trans_b, const f32 delta);
+/// Apply the transformation given the position, rotation, and scale memebers of `trans`.
+/// 
+/// @NOTE: This is more performant method to edit transforms, sicne it will only update 
+/// the internal matrix once instead of each component transformation
+FREYA_API Mat4 transform_apply(Transform& trans);
+
+/// Translate the given `trans` by `pos`, returning a transform `Mat4`.
+FREYA_API Mat4 transform_translate(Transform& trans, const Vec3& pos);
+
+/// Rotate the given `trans` by `rot`, returning a transform `Mat4`.
+///
+/// @NOTE: Internally, the given `rot` quaternion is normalized for better precision.
+FREYA_API Mat4 transform_rotate(Transform& trans, const Quat& rot);
+
+/// Rotate the given `trans` by `axis_angle`, using `x, y, z` as the axis and 
+/// `z` as the angle in radians, returning a transform `Mat4`.
+FREYA_API Mat4 transform_rotate(Transform& trans, const Vec4& axis_angle);
+
+/// Rotate the given `trans` by `angle` in radians around `axis`, returning a transform `Mat4`.
+FREYA_API Mat4 transform_rotate(Transform& trans, const Vec3& axis, const f32 angle);
+
+/// Scale the given `trans` by `scale`, returning a transform `Mat4`.
+FREYA_API Mat4 transform_scale(Transform& trans, const Vec3& scale);
+
+/// Lerp between the two given transforms `trans_a` and `trans_b` by the given `delta` value, returning a transform `Mat4`.
+FREYA_API Mat4 transform_lerp(Transform& trans_a, const Transform& trans_b, const f32 delta);
 
 /// Lerp the components of the given transform `trans` to `position`, `rotation`, 
-/// and `scale` by the given `delta` value.
-FREYA_API void transform_lerp(Transform& trans, 
-                               const Vec2& position, 
-                               const f32 rotation, 
-                               const Vec2& scale,
+/// and `scale` by the given `delta` value, returning a transform `Mat4`.
+FREYA_API Mat4 transform_lerp(Transform& trans, 
+                               const Vec3& position, 
+                               const Quat& rotation, 
+                               const Vec3& scale,
                                const f32 delta);
 
-/// Lerp the position component of the given transform `trans` to `position` by the given `delta` value.
-FREYA_API void transform_lerp_position(Transform& trans, const Vec2& position, const f32 delta);
+/// Lerp the position component of the given transform `trans` to `position` 
+/// by the given `delta` value, returning a transform `Mat4`.
+FREYA_API Mat4 transform_lerp_position(Transform& trans, const Vec3& position, const f32 delta);
 
-/// Use the linear interpolation method to interpolate the roation component 
-/// of `trans` to `rotation` by `delta`.
-FREYA_API void transform_lerp_rotation(Transform& trans, const f32 rotation, const f32 delta);
+/// Use the spherical linear interpolation method to interpolate the roation component 
+/// of `trans` to `rotation` by `delta`, returning a transform `Mat4`.
+FREYA_API Mat4 transform_slerp_rotation(Transform& trans, const Quat& rotation, const f32 delta);
 
-/// Lerp the scale component of the given transform `trans` to `scale` by the given `delta` value.
-FREYA_API void transform_lerp_scale(Transform& trans, const Vec2& scale, const f32 delta);
+/// Lerp the rotation component of the given transform `trans` to `axis` and `angle` 
+/// by the given `delta` value, returning a transform `Mat4`.
+FREYA_API Mat4 transform_lerp_rotation(Transform& trans, const Vec3& axis, const f32 angle, const f32 delta);
+
+/// Lerp the scale component of the given transform `trans` to `scale` 
+/// by the given `delta` value, returning a transform `Mat4`.
+FREYA_API Mat4 transform_lerp_scale(Transform& trans, const Vec3& scale, const f32 delta);
 
 /// Transform functions
 ///---------------------------------------------------------------------------------------------------------------------
@@ -579,17 +577,6 @@ FREYA_API bool rect_in_rect(const Rect2D& r1, const Rect2D& r2);
 /// Basic collision functions
 ///---------------------------------------------------------------------------------------------------------------------
 
-///---------------------------------------------------------------------------------------------------------------------
-/// PoissonDisk functions
-
-/// Using the poisson disk algorithm with the information given in `desc`, calculate 
-/// a set of points evenly distributed and store it in `out_points`.
-///
-/// @NOTE: The function will both clear and resize the given `out_points` array everytime.
-FREYA_API void poisson_disk_calculate(const PoissonDiskDesc& desc, DynamicArray<Vec2>& out_points);
-
-/// PoissonDisk functions
-///---------------------------------------------------------------------------------------------------------------------
 
 } // End of freya
 

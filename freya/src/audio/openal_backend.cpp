@@ -355,7 +355,7 @@ void audio_source_set_looping(AudioSourceID& source, const bool looping) {
   check_al_error("alSourcei(AL_LOOPING)");
 }
 
-void audio_source_set_position(AudioSourceID& source, const Vec2& position) {
+void audio_source_set_position(AudioSourceID& source, const Vec3& position) {
   FREYA_ASSERT_LOG(s_audio.al_device, "The audio device was not initialized for this operation to continue");
   
   s_audio.sources[source.get_id()].position = position;
@@ -364,7 +364,7 @@ void audio_source_set_position(AudioSourceID& source, const Vec2& position) {
   check_al_error("alSource3f(AL_POSITION)");
 }
 
-void audio_source_set_velocity(AudioSourceID& source, const Vec2& velocity) {
+void audio_source_set_velocity(AudioSourceID& source, const Vec3& velocity) {
   FREYA_ASSERT_LOG(s_audio.al_device, "The audio device was not initialized for this operation to continue");
 
   s_audio.sources[source.get_id()].velocity = velocity;
@@ -373,7 +373,7 @@ void audio_source_set_velocity(AudioSourceID& source, const Vec2& velocity) {
   check_al_error("alSource3f(AL_VELOCITY)");
 }
 
-void audio_source_set_direction(AudioSourceID& source, const Vec2& direction) {
+void audio_source_set_direction(AudioSourceID& source, const Vec3& direction) {
   FREYA_ASSERT_LOG(s_audio.al_device, "The audio device was not initialized for this operation to continue");
 
   s_audio.sources[source.get_id()].direction = direction;
@@ -412,7 +412,7 @@ void audio_listener_set_volume(const f32 volume) {
   check_al_error("alListenerfv");
 }
 
-void audio_listener_set_position(const Vec2& position) {
+void audio_listener_set_position(const Vec3& position) {
   FREYA_ASSERT_LOG(s_audio.al_device, "The audio device was not initialized for this operation to continue");
 
   s_audio.listener.position = position;
@@ -421,7 +421,7 @@ void audio_listener_set_position(const Vec2& position) {
   check_al_error("alListenerfv");
 }
 
-void audio_listener_set_velocity(const Vec2& velocity) {
+void audio_listener_set_velocity(const Vec3& velocity) {
   FREYA_ASSERT_LOG(s_audio.al_device, "The audio device was not initialized for this operation to continue");
 
   s_audio.listener.velocity = velocity;

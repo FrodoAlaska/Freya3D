@@ -33,36 +33,19 @@ bool app_init(const freya::Args& args, freya::Window* window) {
   // Editor init
   freya::gui_init(window);
 
-  // Physics world init
-  freya::physics_world_set_gravity(freya::Vec2(0.0f));
-
   // Assets init
-  
   s_app.group_id = freya::asset_group_create("app_assets");
-
-  freya::asset_group_build(s_app.group_id, "../../assets/assets_list.lua", "assets.frpkg");
-  freya::asset_group_load_package(s_app.group_id, "assets.frpkg");
 
   // Camera init 
 
-  freya::EntityID cam_entt = freya::entity_create(s_app.world, freya::Vec2(0.0f));
+  freya::EntityID cam_entt = freya::entity_create(s_app.world, freya::Vec3(10.0f, 0.0f, 10.0f));
   
   freya::CameraDesc cam_desc = {
-    .view_bounds = freya::window_get_size(s_app.window), 
-    .zoom        = 1.0f,
+    .aspect_ratio = freya::window_get_aspect_ratio(s_app.window),
   };
 
   freya::entity_add_camera(s_app.world, cam_entt, cam_desc);
   freya::entity_add_tag(s_app.world, cam_entt, "Camera");
-
-  // Entity init
-
-  freya::EntityID entt = freya::entity_create(s_app.world, freya::Vec2(100.0f), freya::Vec2(128.0f));
-
-  freya::AssetID tex_id  = freya::asset_group_get_id(s_app.group_id, "frodo");
-  freya::Rect2D src_rect = {};
-
-  freya::entity_add_sprite(s_app.world, entt, tex_id, freya::COLOR_WHITE, src_rect);
 
   // Done!
   return true;
@@ -71,6 +54,7 @@ bool app_init(const freya::Args& args, freya::Window* window) {
 void app_shutdown() {
   freya::entity_world_clear(s_app.world);
   freya::asset_group_destroy(s_app.group_id);
+  
   freya::gui_shutdown();
 }
 

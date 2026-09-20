@@ -2,6 +2,7 @@
 
 #include "freya_window.h"
 #include "freya_memory.h"
+#include "freya_assets.h"
 
 #include "sokol/sokol_gfx.h"
 
@@ -65,6 +66,15 @@ const Color COLOR_PURPLE = Color(1.0f, 0.0f, 1.0f, 1.0f);
 ///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------
+/// Consts
+
+/// The number of faces a cubemap should have. 
+const u32 CUBEMAP_FACES_MAX = 6;
+
+/// Consts
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
 /// Texture
 struct Texture {
   sg_image image;
@@ -78,11 +88,78 @@ struct Texture {
 ///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------
+/// Cubemap
+struct Cubemap {
+  sg_image image;
+  sg_sampler sampler;
+  sg_view view;
+  
+  IVec2 face_size = IVec2(-1);
+  u32 faces_count = 0;
+
+  i32 id = -1;
+};
+/// Cubemap
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
+/// Mesh 
+struct Mesh {
+  sg_buffer vertex_buffer;
+  sg_buffer index_buffer;
+
+  u32 material_index = 0;
+  u32 elements_count = 0;
+};
+/// Mesh 
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
+/// MaterialDesc
+struct MaterialDesc {
+  String name = "default";
+
+  AssetID diffuse_id  = {};
+  AssetID specular_id = {};
+  AssetID normal_id   = {};
+  AssetID emissive_id = {};
+
+  Vec4 color = Vec4(1.0f);
+
+  f32 specular = 1.0f;
+  f32 emissive = 1.0f;
+
+  bool shadows_enabled = true;
+};
+/// MaterialDesc
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
+/// Material 
+struct Material {
+  String name = "default";
+
+  Texture diffuse_map;
+  Texture specular_map; 
+  Texture normal_map;
+  Texture emissive_map;
+
+  Vec4 color;
+
+  f32 specular;
+  f32 emissive;
+
+  bool shadows_enabled;
+};
+/// Material 
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
 /// Font
 struct Font {
   /// @NOTE:
   ///
-  /// The library we currently use for UI (RmlUi) uses FreeType to load 
+  /// The library we currently use for UI uses FreeType to load 
   /// the fonts and deal with all that logic. All it needs from us, however, 
   /// is the byte data loaded from a truetype font. And `font_data` is just that. 
   ///
@@ -108,10 +185,15 @@ struct Font {
 /// Return a new RGB `Color` from the given `hex_color`. 
 ///
 /// @NOTE: The given hex color should be arranged as follows: `0xRRGGBBAA`.
-FREYA_API Color color_hex_to_rgb(u32 hex_color);
+FREYA_API Color color_hex_to_rgb(const u32 hex_color);
+
+/// Return a new HEX value from the given `rgb` color.
+///
+/// @NOTE: The returned hex color will be arranged as follows: `0xRRGGBBAA`.
+FREYA_API u32 color_rgb_to_hex(const Color& rgb);
 
 /// Lerp the given `color` towards `other` by `delta`.
-FREYA_API void color_lerp(Color& color, const Color& other, f32 delta);
+FREYA_API void color_lerp(Color& color, const Color& other, const f32 delta);
 
 /// Use smoothstep to interpolate the given `color` towards `other` by `amount`.
 FREYA_API void color_slerp(Color& color, const Color& other, const Color& amount);
