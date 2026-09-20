@@ -53,6 +53,33 @@ void entity_world_update(EntityWorld& world, const f32 delta_time) {
       camera_update(camera);
     }
   }
+  
+  // Point lights
+  {
+    FREYA_PROFILE_FUNCTION_NAMED("entity_world_update(PointLightComponent)");
+
+    auto view = world.view<PointLightComponent, Transform>();
+    for(auto entt : view) {
+      PointLightComponent& light = view.get<PointLightComponent>(entt);
+      Transform& transform       = view.get<Transform>(entt); 
+
+      light.position = transform.position;
+    }
+  }
+  
+  // Mesh
+  {
+    FREYA_PROFILE_FUNCTION_NAMED("entity_world_update(MeshComponent)");
+
+    auto view = world.view<MeshComponent, Transform>();
+    for(auto entt : view) {
+      MeshComponent& mesh  = view.get<MeshComponent>(entt);
+      Transform& transform = view.get<Transform>(entt); 
+
+      // @TODO (Mesh/better system than this)
+      mesh.transform = transform_apply(transform);
+    }
+  }
 }
 
 /// EntityWorld functions
@@ -152,6 +179,53 @@ TimerComponent& entity_add_timer(EntityWorld& world,
   timer_create(timer, desc);
 
   return world.emplace<TimerComponent>(entt, timer, runout_func, user_data);
+}
+
+DirectionalLightComponent& entity_add_directional_light(EntityWorld& world, 
+                                                        EntityID& entt, 
+                                                        const Vec3& direction, 
+                                                        const Vec3& color) {
+  return world.emplace<DirectionalLightComponent>(entt, direction, color); 
+}
+
+PointLightComponent& entity_add_point_light(EntityWorld& world, 
+                                            EntityID& entt, 
+                                            const Vec3& color, 
+                                            f32 radius, 
+                                            f32 fall_off) {
+  Transform& transform = world.get<Transform>(entt);
+  return world.emplace<PointLightComponent>(entt, transform.position, color, radius, fall_off); 
+}
+
+SkyboxComponent& entity_add_skybox(EntityWorld& world, 
+                                   EntityID& entt, 
+                                   const AssetID& cubemap_id, 
+                                   const Vec3& ambient_color) {
+  return world.emplace<SkyboxComponent>(entt, asset_group_get_cubemap(cubemap_id), ambient_color);
+}
+
+MeshComponent& entity_add_mesh(EntityWorld& world, 
+                               EntityID& entt, 
+                               const AssetID& mesh_id, 
+                               const AssetID& material_id) {
+  Transform& transform        = world.get<Transform>(entt);
+  const Material& default_mat = renderer_get_defaults().material; 
+
+  return world.emplace<MeshComponent>(entt, 
+                                      asset_group_get_mesh(mesh_id), 
+                                      (material_id.is_valid() ? asset_group_get_material(material_id) : default_mat), 
+                                      transform_apply(transform));
+}
+
+MeshInstancedComponent& entity_add_mesh_instanced(EntityWorld& world, 
+                                                  EntityID& entt, 
+                                                  const AssetID& mesh_id, 
+                                                  const AssetID& material_id) {
+  const Material& default_mat = renderer_get_defaults().material; 
+  return world.emplace<MeshInstancedComponent>(
+                                      entt, 
+                                      asset_group_get_mesh(mesh_id), 
+                                      (material_id.is_valid() ? asset_group_get_material(material_id) : default_mat));
 }
 
 /// EntityID functions

@@ -165,9 +165,6 @@ FREYA_API void renderer_sumbit_world(EntityWorld* world);
 /// Set renderer's clear color to the given `color`.
 FREYA_API void renderer_set_clear_color(const Color& color);
 
-/// Set whether the renderer should sort the renderable items or not.
-FREYA_API void renderer_set_sort(bool sort);
-
 /// Retrieve the renderer's current clear color.
 FREYA_API const Color& renderer_get_clear_color();
 

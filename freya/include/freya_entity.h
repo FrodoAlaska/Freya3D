@@ -43,9 +43,6 @@ const EntityID ENTITY_NULL = entt::null;
 /// Called when the timer of `entt` has runout, passing in `user_data`.
 using OnTimerRunoutFn = std::function<void(EntityWorld& world, EntityID& entt, void* user_data)>;
 
-/// Called inside UI frames to setup layout, taking in `world`, `entt`, and `user_data`.
-using OnUILayoutFn    = std::function<void(EntityWorld& world, EntityID& entt, void* user_data)>;
-
 /// Callbacks
 /// ----------------------------------------------------------------------
 
@@ -74,15 +71,55 @@ struct TimerComponent {
 /// ----------------------------------------------------------------------
 
 /// ----------------------------------------------------------------------
-/// UILayoutComponent
-struct UILayoutComponent {
-  /// The layout callback to be called on UI frames. 
-  OnUILayoutFn layout_func = nullptr; 
-
-  /// The user data to be passed into `layout_func`.
-  void* user_data          = nullptr;
+/// SkyboxComponent
+struct SkyboxComponent {
+  Cubemap cubemap; 
+  Vec3 ambient_color;
 };
-/// UILayoutComponent
+/// SkyboxComponent
+/// ----------------------------------------------------------------------
+
+/// ----------------------------------------------------------------------
+/// MeshComponent
+struct MeshComponent {
+  Mesh mesh;
+  Material material;
+
+  Mat4 transform = Mat4(1.0f);
+};
+/// MeshComponent
+/// ----------------------------------------------------------------------
+
+/// ----------------------------------------------------------------------
+/// MeshInstancedComponent
+struct MeshInstancedComponent {
+  Mesh mesh;
+  Material material;
+
+  DynamicArray<Mat4> transforms;
+};
+/// MeshInstancedComponent
+/// ----------------------------------------------------------------------
+
+/// ----------------------------------------------------------------------
+/// DirectionalLightComponent
+struct DirectionalLightComponent {
+  Vec3 direction = Vec3(1.0f);
+  Vec3 color     = Vec3(1.0f);
+};
+/// DirectionalLightComponent
+/// ----------------------------------------------------------------------
+
+/// ----------------------------------------------------------------------
+/// PointLightComponent
+struct PointLightComponent {
+  Vec3 position  = Vec3(0.0f);
+  Vec3 color     = Vec3(1.0f);
+
+  f32 radius   = 2.5f;
+  f32 fall_off = 1.0f;
+};
+/// PointLightComponent
 /// ----------------------------------------------------------------------
 
 /// ----------------------------------------------------------------------
@@ -153,6 +190,45 @@ FREYA_API TimerComponent& entity_add_timer(EntityWorld& world,
                                            const TimerDesc& desc, 
                                            const OnTimerRunoutFn& runout_func, 
                                            void* user_data = nullptr);
+
+/// A helper function to add a directional light component to `entt`, using the given `direction` and `color`. 
+FREYA_API DirectionalLightComponent& entity_add_directional_light(EntityWorld& world, 
+                                                                  EntityID& entt, 
+                                                                  const Vec3& direction, 
+                                                                  const Vec3& color = Vec3(1.0f));
+
+/// A helper function to add a point light component to `entt`, using the given, `color, 
+/// `radius`, and `fall_off`. 
+FREYA_API PointLightComponent& entity_add_point_light(EntityWorld& world, 
+                                                      EntityID& entt, 
+                                                      const Vec3& color = Vec3(1.0f), 
+                                                      f32 radius        = 2.5f, 
+                                                      f32 fall_off      = 1.0f);
+
+/// A helper function to add a skybox component to `entt`, using the 
+/// given `cubemap_id` and `ambient_color`.
+FREYA_API SkyboxComponent& entity_add_skybox(EntityWorld& world, 
+                                             EntityID& entt, 
+                                             const AssetID& cubemap_id, 
+                                             const Vec3& ambient_color = Vec3(1.0f));
+
+/// A helper function to add a mesh component to `entt`, using the 
+/// given `mesh_id` and `material_id`.
+FREYA_API MeshComponent& entity_add_mesh(EntityWorld& world, 
+                                         EntityID& entt, 
+                                         const AssetID& mesh_id, 
+                                         const AssetID& material_id = {});
+
+/// A helper function to add an instanced mesh component to `entt`, using the 
+/// given `mesh_id`, `material_id`.
+///
+/// @NOTE: Since copying arrays is generally awful, in order to add the transforms, 
+/// you must capture the returned `MeshInstancedComponent` struct and append to the 
+/// `.transforms` member yourself. The array will be empty unless added to by the client.
+FREYA_API MeshInstancedComponent& entity_add_mesh_instanced(EntityWorld& world, 
+                                                            EntityID& entt, 
+                                                            const AssetID& mesh_id, 
+                                                            const AssetID& material_id = {});
 
 /// Retrieve a reference to a generic component `Comp` from `entt` that lives in the given `world`.
 ///

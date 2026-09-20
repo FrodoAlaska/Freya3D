@@ -3,6 +3,7 @@
 #include "freya_event.h"
 #include "freya_entity.h"
 
+#include "passes/render_passes.h"
 #include "shaders/default_pass_shader.h"
 
 #include "fontstash/fontstash.h"
@@ -11,28 +12,9 @@
 #include "sokol/sokol_gl.h"
 #include "sokol/sokol_fontstash.h"
 
-#include "shaders/main_shader.h"
-#include "shaders/screen_space_shader.h"
-#include "shaders/skybox_shader.h"
-
 //////////////////////////////////////////////////////////////////////////
 
 namespace freya { // Start of freya
-
-///---------------------------------------------------------------------------------------------------------------------
-/// Consts
-
-const i32 SHADER_BINDING_FRAME_DATA  = UB_FrameData;
-const i32 SHADER_BINDING_MODEL       = UB_ModelIndex;
-const i32 SHADER_BINDING_LIGHT       = UB_Light;
-const i32 SHADER_BINDING_POINT_LIGHT = UB_PointLight;
-const i32 SHADER_BINDING_MATERIAL    = UB_Material;
-
-const sizei INSTANCE_BUFFER_SIZE = KiB(128);
-const u32 POINT_LIGHTS_MAX       = 16;
-
-/// Consts
-///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------
 /// ShaderID
@@ -55,16 +37,26 @@ struct Renderer {
   RendererDefaults defaults;
   Array<AssetID, SHADERS_COUNT> shaders;
 
-  /// Per-frame state
+  /// Important state
 
-  Window* window = nullptr;
-  Color color    = Color(1.0f);
+  Window* window   = nullptr;
+  IVec2 frame_size = IVec2(0);
   
   AssetGroupID group_id = ASSET_CACHE_ID;
   EntityWorld* world    = nullptr;
+  
+  /// Passes
 
-  Camera* main_cam = nullptr;
-  bool can_sort    = false;
+  Array<RenderQueue, RENDER_QUEUES_COUNT> queues;
+  Array<RenderPass, RENDER_PASSSES_COUNT> passes;
+  
+  /// Per-frame state
+
+  Color color            = Color(1.0f);
+  FrameData_t frame_data = {};
+
+  PointLight_t point_lights = {};
+  Light_t dir_light         = {};
 
   /// UI
 
@@ -230,6 +222,8 @@ static void init_defaults() {
 
   // Sampler init 
   s_renderer.defaults.sampler = sg_make_sampler(sg_sampler_desc{});
+  
+  FREYA_LOG_TRACE("Renderer defaults initialized");
 }
 
 static void init_shaders() {
@@ -245,6 +239,147 @@ static void init_shaders() {
   for(sizei i = 0; i < s_renderer.shaders.size(); i++) {
     s_renderer.shaders[i] = asset_group_push_shader(s_renderer.group_id, *shader_descs[i]);
   }
+   
+  FREYA_LOG_TRACE("Default shaders initialized");
+}
+
+static void init_queues() {
+  //
+  // Shadow queue init 
+  //
+  {
+    RenderQueue& queue = s_renderer.queues[RENDER_QUEUE_SHADOW];
+
+    // Pipeline init
+
+    sg_pipeline_desc pipe_desc = {};
+
+    pipe_desc.depth.pixel_format  = SG_PIXELFORMAT_DEPTH;
+    pipe_desc.depth.compare       = SG_COMPAREFUNC_LESS_EQUAL;
+    pipe_desc.depth.write_enabled = true;
+
+    pipe_desc.shader       = asset_group_get_shader(s_renderer.shaders[SHADER_SHADOW]); 
+    pipe_desc.sample_count = window_get_samples_count(s_renderer.window);
+
+    pipe_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3; // Position
+    pipe_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT3; // Normal
+    pipe_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT3; // Tangant
+    pipe_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT2; // Texture coords
+
+    pipe_desc.index_type             = SG_INDEXTYPE_UINT16;
+    pipe_desc.colors[0].pixel_format = SG_PIXELFORMAT_NONE;
+
+    queue.pipeline = sg_make_pipeline(pipe_desc);
+
+    // Init transforms buffer 
+
+    sg_buffer_desc buff_desc = {};
+
+    buff_desc.size = INSTANCE_BUFFER_SIZE;
+    
+    buff_desc.usage.storage_buffer = true; 
+    buff_desc.usage.stream_update  = true;
+
+    sg_buffer inst_buffer = sg_make_buffer(buff_desc);
+    
+    // Init transforms buffer view 
+  
+    sg_view_desc view_desc          = {};
+    view_desc.storage_buffer.buffer = inst_buffer;
+
+    sg_view inst_view = sg_make_view(view_desc);
+
+    // Add them to the queue
+  
+    queue.transforms_buffer = inst_buffer;
+    queue.transforms_view   = inst_view;
+  }
+ 
+  //
+  // Opaque queue init 
+  //
+  {
+    RenderQueue& queue = s_renderer.queues[RENDER_QUEUE_OPAQUE];
+
+    // Pipeline init
+
+    sg_pipeline_desc pipe_desc = {};
+
+    pipe_desc.depth.compare       = SG_COMPAREFUNC_LESS_EQUAL;
+    pipe_desc.depth.write_enabled = true;
+
+    pipe_desc.shader       = asset_group_get_shader(s_renderer.shaders[SHADER_LIGHTING]); 
+    pipe_desc.sample_count = window_get_samples_count(s_renderer.window);
+
+    pipe_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3; // Position
+    pipe_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT3; // Normal
+    pipe_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT3; // Tangant
+    pipe_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT2; // Texture coords
+    
+    pipe_desc.index_type = SG_INDEXTYPE_UINT16;
+
+    queue.pipeline = sg_make_pipeline(pipe_desc);
+
+    // Init transforms buffer 
+
+    sg_buffer_desc buff_desc = {};
+
+    buff_desc.size = INSTANCE_BUFFER_SIZE;
+    
+    buff_desc.usage.storage_buffer = true; 
+    buff_desc.usage.stream_update  = true;
+
+    sg_buffer inst_buffer = sg_make_buffer(buff_desc);
+    
+    // Init transforms buffer view 
+  
+    sg_view_desc view_desc          = {};
+    view_desc.storage_buffer.buffer = inst_buffer;
+
+    sg_view inst_view = sg_make_view(view_desc);
+
+    // Add them to the queue
+  
+    queue.transforms_buffer = inst_buffer;
+    queue.transforms_view   = inst_view;
+  }
+ 
+  //
+  // Screen-space queue init 
+  //
+  {
+    sg_pipeline_desc pipe_desc = {};
+
+    pipe_desc.shader       = asset_group_get_shader(s_renderer.shaders[SHADER_SCREEN_SPACE]); 
+    pipe_desc.sample_count = window_get_samples_count(s_renderer.window);
+
+    pipe_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT2; // Position
+    pipe_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT2; // Texture coords
+
+    pipe_desc.index_type = SG_INDEXTYPE_UINT16;
+
+    s_renderer.queues[RENDER_QUEUE_SCREEN_SPACE].pipeline = sg_make_pipeline(pipe_desc);
+  }
+ 
+  //
+  // Skybox queue init 
+  //
+  {
+    sg_pipeline_desc pipe_desc = {};
+    
+    pipe_desc.depth.compare       = SG_COMPAREFUNC_LESS_EQUAL;
+    pipe_desc.depth.write_enabled = true;
+
+    pipe_desc.shader       = asset_group_get_shader(s_renderer.shaders[SHADER_SKYBOX]); 
+    pipe_desc.sample_count = window_get_samples_count(s_renderer.window);
+
+    pipe_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3; // Position
+    pipe_desc.index_type             = SG_INDEXTYPE_UINT16;
+
+    s_renderer.queues[RENDER_QUEUE_SKYBOX].pipeline = sg_make_pipeline(pipe_desc);
+  }
+  
+  FREYA_LOG_TRACE("Render queues initialized");
 }
 
 /// Private functions
@@ -254,7 +389,10 @@ static void init_shaders() {
 /// Renderer functions
 
 void renderer_init(Window* window) {
-  s_renderer.window = window;
+  // Window and frame init
+
+  s_renderer.window     = window;
+  s_renderer.frame_size = window_get_size(s_renderer.window); 
 
   // GFX init
 
@@ -300,6 +438,19 @@ void renderer_init(Window* window) {
 
   init_defaults();
   init_shaders();
+  init_queues();
+  
+  s_renderer.frame_data.u_ambient_color = Vec3(1.0f);
+
+  s_renderer.dir_light.direction = Vec3(0.0f);
+  s_renderer.dir_light.color     = Vec3(1.0f);
+
+  s_renderer.point_lights.count = 0;
+
+  // Render passes init
+
+  // @TODO(Renderer/shadow): shadow_pass_init(s_renderer.passes[RENDER_PASS_SHADOW], s_renderer.window, IVec2(1280));
+  geometry_pass_init(s_renderer.passes[RENDER_PASS_GEOMETRY], s_renderer.window);
 
   // Listen to events
    
@@ -336,10 +487,6 @@ void renderer_set_clear_color(const Color& color) {
   s_renderer.color = color;
 }
 
-void renderer_set_sort(bool sort) {
-  s_renderer.can_sort = sort;
-}
-
 const Color& renderer_get_clear_color() {
   return s_renderer.color;
 }
@@ -370,48 +517,323 @@ void renderer_prepare() {
   FREYA_DEBUG_ASSERT(s_renderer.world, "Invalid EntityWorld found in renderer");
   FREYA_PROFILE_FUNCTION();
 
-  // Reset the renderer's state 
-  
   EntityWorld* world = s_renderer.world;
-
-  IVec2 frame_size = window_get_framebuffer_size(s_renderer.window);
-  IVec2 size       = window_get_size(s_renderer.window);
 
   // 
   // Gather the frame data 
   //
 
   // Update the camera data
+
+  Camera* main_cam = nullptr; 
   {
     auto view = world->view<Camera>();
     for(auto& entt : view) {
-      s_renderer.main_cam = &view.get<Camera>(entt);
+      main_cam = &view.get<Camera>(entt);
       break;
     }
   }
 
-  // Projecting the scene using the camera if it was found 
+  if(main_cam) {
+    s_renderer.frame_data.u_view       = main_cam->view;
+    s_renderer.frame_data.u_projection = main_cam->projection;
+    s_renderer.frame_data.u_camera_pos = main_cam->position;
+  }
 
-  if(s_renderer.main_cam) {
-    // @TODO (Renderer/camera)
+  // Update the skybox component
+
+  SkyboxComponent* skybox = nullptr;
+  {
+    auto view = world->view<SkyboxComponent>();
+    for(auto& entt : view) {
+      skybox = &view.get<SkyboxComponent>(entt);
+      break;
+    }
+  }
+
+  // Push a skybox draw entry if it exists
+
+  if(skybox) {
+    s_renderer.frame_data.u_ambient_color = skybox->ambient_color;
+
+    Mesh& skybox_mesh = s_renderer.defaults.skybox_mesh; 
+    sg_bindings bind  = {};
+
+    bind.vertex_buffers[0] = skybox_mesh.vertex_buffer;
+    bind.index_buffer      = skybox_mesh.index_buffer; 
+
+    bind.views[0]    = skybox->cubemap.view;
+    bind.samplers[0] = skybox->cubemap.sampler;
+
+    s_renderer.queues[RENDER_QUEUE_SKYBOX].entries.emplace_back(bind, skybox_mesh.elements_count);
+  }
+
+  // Update the directional light
+
+  DirectionalLightComponent* dir_light = nullptr; 
+  {
+    auto view = world->view<DirectionalLightComponent>();
+    for(auto& entt : view) {
+      dir_light = &view.get<DirectionalLightComponent>(entt);
+      break;
+    }
+  }
+
+  if(dir_light) {
+    s_renderer.dir_light.direction = dir_light->direction;
+    s_renderer.dir_light.color     = dir_light->color;
+  }
+
+  // Update the point lights 
+  {
+    auto view            = world->view<PointLightComponent>();
+    PointLight_t& lights = s_renderer.point_lights;
+
+    for(auto& entt : view) {
+      // Make sure to not exceed the max
+
+      PointLightComponent& point = view.get<PointLightComponent>(entt);
+      if(lights.count >= POINT_LIGHTS_MAX) {
+        break;
+      }
+
+      // Add the point light
+
+      lights.position_r[lights.count] = Vec4(point.position, point.radius); 
+      lights.color_fo[lights.count]   = Vec4(point.color, point.fall_off);
+      lights.count++;
+    }
   }
 
   // 
-  // Prepare the frame 
+  // Fill the render queues 
   //
-  // @TODO (Renderer/draw)
+
+  // Meshes
+  {
+    auto view = world->view<MeshComponent>();
+    for(auto& entt : view) {
+      MeshComponent& comp = view.get<MeshComponent>(entt);
+      RenderQueue& opaque = s_renderer.queues[RENDER_QUEUE_OPAQUE];
+
+      RenderQueueEntry entry;
+       
+      // Setup the bindings of the entry
+
+      entry.bindings.vertex_buffers[0] = comp.mesh.vertex_buffer; 
+      entry.bindings.index_buffer      = comp.mesh.index_buffer; 
+
+      entry.bindings.views[0] = opaque.transforms_view;
+      entry.bindings.views[1] = comp.material.diffuse_map.view;
+      entry.bindings.views[2] = comp.material.specular_map.view;
+      entry.bindings.views[3] = comp.material.normal_map.view;
+      entry.bindings.views[4] = comp.material.emissive_map.view;
+      entry.bindings.views[5] = s_renderer.passes[RENDER_PASS_SHADOW].attachments[0];
+
+      entry.bindings.samplers[0] = comp.material.diffuse_map.sampler;
+      entry.bindings.samplers[1] = comp.material.specular_map.sampler;
+      entry.bindings.samplers[2] = comp.material.normal_map.sampler;
+      entry.bindings.samplers[3] = comp.material.emissive_map.sampler;
+      entry.bindings.samplers[4] = s_renderer.passes[RENDER_PASS_SHADOW].sampler;
+
+      // Setup the material 
+
+      entry.material = {
+        comp.material.color, 
+        comp.material.specular, 
+        comp.material.emissive,
+      };
+
+      // Fill the rest of the entry
+      
+      entry.model.u_index = (i32)opaque.entries.size();
+
+      entry.elements_count  = comp.mesh.elements_count;
+      entry.instances_count = 1;
+
+      // Pushing into the queue
+      
+      opaque.transforms.emplace_back(comp.transform);
+      opaque.entries.push_back(entry);
+
+      // Pushing to the shadow queue if possible 
+
+      if(comp.material.shadows_enabled) {
+        RenderQueue& shadow = s_renderer.queues[RENDER_QUEUE_SHADOW];
+        RenderQueueEntry shadow_entry; 
+
+        // Setup the the entry
+
+        shadow_entry.model.u_index = (i32)shadow.entries.size();
+        
+        shadow_entry.bindings                   = {0};
+        shadow_entry.bindings.vertex_buffers[0] = comp.mesh.vertex_buffer; 
+        shadow_entry.bindings.index_buffer      = comp.mesh.index_buffer; 
+
+        shadow_entry.bindings.views[0] = shadow.transforms_view;
+
+        shadow_entry.elements_count  = comp.mesh.elements_count;
+        shadow_entry.instances_count = 1;
+
+        // Pushing into the queue
+        
+        shadow.transforms.emplace_back(comp.transform);
+        shadow.entries.push_back(shadow_entry);
+      }
+    }
+  }
+
+  //
+  // Instanced meshes 
+  //
+  {
+    auto view = world->view<MeshInstancedComponent>();
+    for(auto& entt : view) {
+      MeshInstancedComponent& comp = view.get<MeshInstancedComponent>(entt);
+      RenderQueue& opaque          = s_renderer.queues[RENDER_QUEUE_OPAQUE];
+
+      RenderQueueEntry entry;
+      
+      // Setup the bindings of the entry
+
+      entry.bindings.vertex_buffers[0] = comp.mesh.vertex_buffer; 
+      entry.bindings.index_buffer      = comp.mesh.index_buffer; 
+
+      entry.bindings.views[0] = opaque.transforms_view;
+      entry.bindings.views[1] = comp.material.diffuse_map.view;
+      entry.bindings.views[2] = comp.material.specular_map.view;
+      entry.bindings.views[3] = comp.material.normal_map.view;
+      entry.bindings.views[4] = comp.material.emissive_map.view;
+      entry.bindings.views[5] = s_renderer.passes[RENDER_PASS_SHADOW].attachments[0];
+
+      entry.bindings.samplers[0] = comp.material.diffuse_map.sampler;
+      entry.bindings.samplers[1] = comp.material.specular_map.sampler;
+      entry.bindings.samplers[2] = comp.material.normal_map.sampler;
+      entry.bindings.samplers[3] = comp.material.emissive_map.sampler;
+      entry.bindings.samplers[4] = s_renderer.passes[RENDER_PASS_SHADOW].sampler;
+      
+      // Setup the material 
+
+      entry.material = {
+        comp.material.color, 
+        comp.material.specular, 
+        comp.material.emissive,
+      };
+
+      // Fill the rest of the entry
+      
+      entry.model.u_index = (i32)opaque.entries.size();
+
+      entry.elements_count  = comp.mesh.elements_count;
+      entry.instances_count = (u32)comp.transforms.size();
+
+      // Pushing into the queue
+      
+      opaque.transforms.insert(opaque.transforms.end(), comp.transforms.begin(), comp.transforms.end());
+      opaque.entries.push_back(entry);
+
+      // Pushing to the shadow queue if possible 
+
+      if(comp.material.shadows_enabled) {
+        RenderQueue& shadow = s_renderer.queues[RENDER_QUEUE_SHADOW];
+        RenderQueueEntry shadow_entry; 
+
+        // Setup the the entry
+
+        shadow_entry.model.u_index = (i32)shadow.entries.size();
+        
+        shadow_entry.bindings                   = {0};
+        shadow_entry.bindings.vertex_buffers[0] = comp.mesh.vertex_buffer; 
+        shadow_entry.bindings.index_buffer      = comp.mesh.index_buffer; 
+      
+        shadow_entry.bindings.views[0] = shadow.transforms_view;
+
+        shadow_entry.elements_count  = comp.mesh.elements_count;
+        shadow_entry.instances_count = (u32)comp.transforms.size();
+
+        // Pushing into the queue
+        
+        shadow.transforms.insert(shadow.transforms.end(), comp.transforms.begin(), comp.transforms.end());
+        shadow.entries.push_back(shadow_entry);
+      }
+    }
+  }
+
+  // 
+  // Fill the screen-space queue 
+  //
+  {
+    RenderPass& current_pass = s_renderer.passes[RENDER_PASS_DEFAULT - 1];
+    RenderQueue& queue       = s_renderer.queues[RENDER_QUEUE_SCREEN_SPACE];
+
+    // Use the final texture image of the current pass
+
+    sg_bindings bind = {};
+
+    bind.views[0] = current_pass.attachments[0];
+
+    bind.vertex_buffers[0] = s_renderer.defaults.quad_mesh.vertex_buffer;
+    bind.index_buffer      = s_renderer.defaults.quad_mesh.index_buffer;
+    
+    bind.samplers[0] = current_pass.sampler;
+
+    // Pushing into the queue
+    queue.entries.emplace_back(bind, 6);
+  } 
+
+  // Prepare any passes
+  // @TODO (Renderer/shadow pass)
+  // shadow_pass_prepare(s_renderer.passes[RENDER_PASS_SHADOW], *main_cam, *dir_light, s_renderer.frame_data.u_light_space);
 }
 
 void renderer_commit() {
   FREYA_PROFILE_FUNCTION();
+
+  //
+  // Commit all of the passes in order
+  // 
+
+  // @TODO: Shadow...
+  // shadow_pass_commit(s_renderer.passes[RENDER_PASS_SHADOW], s_renderer.queues[RENDER_QUEUE_SHADOW], s_renderer.frame_data);
  
-  // @TODO (Renderer/commit)
+  // Geometry...
+
+  GeometryPassData geo_data = {
+    .skybox_queue = &s_renderer.queues[RENDER_QUEUE_SKYBOX],
+    .opaque_queue = &s_renderer.queues[RENDER_QUEUE_OPAQUE],
+
+    .frame_data = s_renderer.frame_data, 
+
+    .point_lights = s_renderer.point_lights, 
+    .dir_light    = s_renderer.dir_light,
+  };
+  geometry_pass_commit(s_renderer.passes[RENDER_PASS_GEOMETRY], geo_data);
   
+  // Default...
+  default_pass_commit(s_renderer.passes[RENDER_PASS_DEFAULT], s_renderer.queues[RENDER_QUEUE_SCREEN_SPACE], s_renderer.window);
+
   // Done with this frame... 
   sg_commit();
 
   // Clean the slate
-  s_renderer.main_cam = nullptr;
+
+  for(auto& queue : s_renderer.queues) {
+    queue.transforms.clear();
+    queue.entries.clear();
+  }
+
+  // Clear any shader states 
+
+  s_renderer.dir_light.direction = Vec3(0.0f);
+  s_renderer.dir_light.color     = Vec3(1.0f);
+
+  s_renderer.frame_data.u_view       = Mat4(1.0f);
+  s_renderer.frame_data.u_projection = Mat4(1.0f);
+  s_renderer.frame_data.u_camera_pos = Vec3(0.0f);
+
+  s_renderer.point_lights.count = 0;
+  
+  s_renderer.frame_data.u_ambient_color = Vec3(1.0f);
 }
 
 void* renderer_get_font_context() {

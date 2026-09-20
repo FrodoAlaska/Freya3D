@@ -54,6 +54,11 @@ set(FREYA_SOURCES
   ${FREYA_SRC_DIR}/renderer/color.cpp
   ${FREYA_SRC_DIR}/renderer/renderer.cpp
   
+  # Renderer/passes
+  ${FREYA_SRC_DIR}/renderer/passes/shadow_pass.cpp
+  ${FREYA_SRC_DIR}/renderer/passes/geometry_pass.cpp
+  ${FREYA_SRC_DIR}/renderer/passes/default_pass.cpp
+  
   # Entity
   ${FREYA_SRC_DIR}/entity/entity.cpp
   

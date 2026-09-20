@@ -25,8 +25,6 @@ bool app_init(const freya::Args& args, freya::Window* window) {
   freya::renderer_set_clear_color(freya::Vec4(0.1f, 0.1f, 0.1f, 1.0f));
   freya::renderer_sumbit_world(&s_app.world);
 
-  freya::renderer_set_sort(true);
-
   // Window init
   s_app.window = window;
 
