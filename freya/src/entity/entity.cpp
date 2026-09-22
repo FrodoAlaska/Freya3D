@@ -229,6 +229,22 @@ MeshInstancedComponent& entity_add_mesh_instanced(EntityWorld& world,
                                       (material_id.is_valid() ? asset_group_get_material(material_id) : default_mat));
 }
 
+BillboardComponent& entity_add_billboard(EntityWorld& world, 
+                                         EntityID& entt, 
+                                         const AssetID& texture_id) {
+  Transform& transform = world.get<Transform>(entt);
+  
+  // Get the correct texture
+
+  Texture texture = {};
+  if(texture_id.get_id() != ASSET_ID_INVALID) {
+    texture = asset_group_get_texture(texture_id);
+  }
+  
+  // Done!
+  return world.emplace<BillboardComponent>(entt, texture, transform_apply(transform));
+}
+
 void entity_camera_free_move(EntityWorld& world, EntityID& entt, f32 speed) {
   // Retrive the relevant components
 

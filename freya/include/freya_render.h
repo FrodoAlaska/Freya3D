@@ -105,6 +105,7 @@ struct RendererDefaults {
 
   Mesh quad_mesh;
   Mesh skybox_mesh;
+  Mesh billboard_mesh;
 
   sg_sampler sampler;
 };

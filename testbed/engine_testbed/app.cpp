@@ -85,7 +85,7 @@ bool app_init(const freya::Args& args, freya::Window* window) {
 
   // Plane init
 
-  mesh_id = freya::asset_group_push_mesh(s_app.group_id, freya::MESH_PLANE);
+  mesh_id = freya::asset_group_push_mesh(s_app.group_id, freya::MESH_CUBE);
   
   mat_desc = {
     .name = "plane_material", 

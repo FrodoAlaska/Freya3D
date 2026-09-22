@@ -3,6 +3,7 @@
 #include "freya_render.h"
 
 #include "../shaders/main_shader.h"
+#include "../shaders/billboard_shader.h"
 #include "../shaders/screen_space_shader.h"
 #include "../shaders/skybox_shader.h"
 
@@ -42,6 +43,7 @@ enum RenderPassID {
 enum RenderQueueID {
   RENDER_QUEUE_SHADOW,
   RENDER_QUEUE_OPAQUE, 
+  RENDER_QUEUE_BILLBOARD,
   RENDER_QUEUE_SCREEN_SPACE,
   RENDER_QUEUE_SKYBOX,
 
@@ -93,8 +95,9 @@ struct RenderQueue {
 ///---------------------------------------------------------------------------------------------------------------------
 /// GeometryPassData 
 struct GeometryPassData {
-  RenderQueue* skybox_queue = nullptr;
-  RenderQueue* opaque_queue = nullptr;
+  RenderQueue* skybox_queue    = nullptr;
+  RenderQueue* opaque_queue    = nullptr;
+  RenderQueue* billboard_queue = nullptr;
 
   FrameData_t frame_data = {};
 

@@ -21,6 +21,7 @@ namespace freya { // Start of freya
 enum ShaderID {
   SHADER_SHADOW,
   SHADER_LIGHTING,
+  SHADER_BILLBOARD,
   SHADER_SCREEN_SPACE,
   SHADER_SKYBOX,
 
@@ -220,6 +221,35 @@ static void init_defaults() {
     s_renderer.defaults.skybox_mesh = asset_group_get_mesh(asset_group_push_mesh(s_renderer.group_id, vert_desc, idx_desc, 36));
   }
 
+  // 
+  // Billboard mesh init 
+  //
+  {
+    f32 vertices[] = {
+      // Position          Normal             Texture coords
+      
+      -1.0f,  1.0f, 0.0f,  0.0f, 0.0f, 1.0f,  0.0f, 1.0f,
+      -1.0f, -1.0f, 0.0f,  0.0f, 0.0f, 1.0f,  0.0f, 0.0f,
+       1.0f, -1.0f, 0.0f,  0.0f, 0.0f, 1.0f,  1.0f, 0.0f,
+       1.0f,  1.0f, 0.0f,  0.0f, 0.0f, 1.0f,  1.0f, 1.0f,
+    };
+
+    u16 indices[] = {
+      0, 1, 2, 
+      2, 3, 0
+    };
+    
+    sg_buffer_desc vert_desc = {};
+    vert_desc.data           = SG_RANGE(vertices);
+    
+    sg_buffer_desc idx_desc     = {};
+    idx_desc.usage.index_buffer = true;
+    idx_desc.data               = SG_RANGE(indices);
+
+    AssetID mesh_id                    = asset_group_push_mesh(s_renderer.group_id, vert_desc, idx_desc, 36);
+    s_renderer.defaults.billboard_mesh = asset_group_get_mesh(mesh_id);
+  }
+
   // Sampler init 
   s_renderer.defaults.sampler = sg_make_sampler(sg_sampler_desc{});
   
@@ -232,6 +262,7 @@ static void init_shaders() {
   const sg_shader_desc* shader_descs[SHADERS_COUNT] = {
     shadow_pass_shader_desc(backend),
     lighting_pass_shader_desc(backend),
+    bb_billboard_pass_shader_desc(backend),
     screen_space_shader_desc(backend),
     sk_skybox_shader_desc(backend),
   };
@@ -309,6 +340,55 @@ static void init_queues() {
     pipe_desc.depth.write_enabled = true;
 
     pipe_desc.shader       = asset_group_get_shader(s_renderer.shaders[SHADER_LIGHTING]); 
+    pipe_desc.sample_count = window_get_samples_count(s_renderer.window);
+
+    pipe_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3; // Position
+    pipe_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT3; // Normal
+    pipe_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT3; // Tangant
+    pipe_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT2; // Texture coords
+    
+    pipe_desc.index_type = SG_INDEXTYPE_UINT16;
+
+    queue.pipeline = sg_make_pipeline(pipe_desc);
+
+    // Init transforms buffer 
+
+    sg_buffer_desc buff_desc = {};
+
+    buff_desc.size = INSTANCE_BUFFER_SIZE;
+    
+    buff_desc.usage.storage_buffer = true; 
+    buff_desc.usage.stream_update  = true;
+
+    sg_buffer inst_buffer = sg_make_buffer(buff_desc);
+    
+    // Init transforms buffer view 
+  
+    sg_view_desc view_desc          = {};
+    view_desc.storage_buffer.buffer = inst_buffer;
+
+    sg_view inst_view = sg_make_view(view_desc);
+
+    // Add them to the queue
+  
+    queue.transforms_buffer = inst_buffer;
+    queue.transforms_view   = inst_view;
+  }
+  
+  //
+  // Billboard queue init 
+  //
+  {
+    RenderQueue& queue = s_renderer.queues[RENDER_QUEUE_BILLBOARD];
+
+    // Pipeline init
+
+    sg_pipeline_desc pipe_desc = {};
+
+    pipe_desc.depth.compare       = SG_COMPAREFUNC_LESS_EQUAL;
+    pipe_desc.depth.write_enabled = true;
+
+    pipe_desc.shader       = asset_group_get_shader(s_renderer.shaders[SHADER_BILLBOARD]); 
     pipe_desc.sample_count = window_get_samples_count(s_renderer.window);
 
     pipe_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3; // Position
@@ -756,6 +836,45 @@ void renderer_prepare() {
         shadow.transforms.insert(shadow.transforms.end(), comp.transforms.begin(), comp.transforms.end());
         shadow.entries.push_back(shadow_entry);
       }
+    }
+  }
+
+  // 
+  // Fill the billboard queue 
+  //
+  {
+    auto view = world->view<BillboardComponent>();
+    for(auto& entt : view) {
+      // Retrieve the imporant components
+
+      BillboardComponent& comp = view.get<BillboardComponent>(entt);
+      RenderQueue& billboard   = s_renderer.queues[RENDER_QUEUE_BILLBOARD];
+
+      RenderQueueEntry entry;
+
+      // Setup the bindings 
+
+      Mesh& mesh = s_renderer.defaults.billboard_mesh;
+
+      entry.bindings.vertex_buffers[0] = mesh.vertex_buffer; 
+      entry.bindings.index_buffer      = mesh.index_buffer; 
+
+      entry.bindings.views[0] = billboard.transforms_view;
+      entry.bindings.views[1] = comp.texture.view; 
+
+      entry.bindings.samplers[0] = comp.texture.sampler;
+      
+      // Fill the rest of the entry
+      
+      entry.model.u_index = (i32)billboard.entries.size();
+      
+      entry.elements_count  = mesh.elements_count;
+      entry.instances_count = 1;
+     
+      // Pushing into the queue
+      
+      billboard.transforms.emplace_back(comp.transform);
+      billboard.entries.push_back(entry);
     }
   }
 

@@ -71,6 +71,27 @@ struct TimerComponent {
 /// ----------------------------------------------------------------------
 
 /// ----------------------------------------------------------------------
+/// DirectionalLightComponent
+struct DirectionalLightComponent {
+  Vec3 direction = Vec3(1.0f);
+  Vec3 color     = Vec3(1.0f);
+};
+/// DirectionalLightComponent
+/// ----------------------------------------------------------------------
+
+/// ----------------------------------------------------------------------
+/// PointLightComponent
+struct PointLightComponent {
+  Vec3 position  = Vec3(0.0f);
+  Vec3 color     = Vec3(1.0f);
+
+  f32 radius   = 2.5f;
+  f32 fall_off = 1.0f;
+};
+/// PointLightComponent
+/// ----------------------------------------------------------------------
+
+/// ----------------------------------------------------------------------
 /// SkyboxComponent
 struct SkyboxComponent {
   Cubemap cubemap; 
@@ -102,24 +123,12 @@ struct MeshInstancedComponent {
 /// ----------------------------------------------------------------------
 
 /// ----------------------------------------------------------------------
-/// DirectionalLightComponent
-struct DirectionalLightComponent {
-  Vec3 direction = Vec3(1.0f);
-  Vec3 color     = Vec3(1.0f);
+/// BillboardComponent
+struct BillboardComponent {
+  Texture texture = {}; 
+  Mat4 transform  = Mat4(1.0f);
 };
-/// DirectionalLightComponent
-/// ----------------------------------------------------------------------
-
-/// ----------------------------------------------------------------------
-/// PointLightComponent
-struct PointLightComponent {
-  Vec3 position  = Vec3(0.0f);
-  Vec3 color     = Vec3(1.0f);
-
-  f32 radius   = 2.5f;
-  f32 fall_off = 1.0f;
-};
-/// PointLightComponent
+/// BillboardComponent
 /// ----------------------------------------------------------------------
 
 /// ----------------------------------------------------------------------
@@ -229,6 +238,12 @@ FREYA_API MeshInstancedComponent& entity_add_mesh_instanced(EntityWorld& world,
                                                             EntityID& entt, 
                                                             const AssetID& mesh_id, 
                                                             const AssetID& material_id = {});
+
+/// A helper function to add a billboard component to `entt`, using the given
+/// `texture_id` to give to the render command.
+FREYA_API BillboardComponent& entity_add_billboard(EntityWorld& world, 
+                                                   EntityID& entt, 
+                                                   const AssetID& texture_id);
 
 /// A helper function to make the camera component of the given `entt` 
 /// mimick a free-form camera movement, giving it `speed` speed.
