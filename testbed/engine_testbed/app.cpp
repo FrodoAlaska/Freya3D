@@ -100,6 +100,13 @@ bool app_init(const freya::Args& args, freya::Window* window) {
   freya::EntityID plane_entt = freya::entity_create(s_app.world, freya::Vec3(10.0f, -1.0f, 10.0f), freya::Vec3(12.0f, 0.1f, 12.0f)); 
   freya::entity_add_mesh(s_app.world, plane_entt, mesh_id, material_id);
 
+  // Billboard init
+
+  freya::EntityID bill_entt = freya::entity_create(s_app.world, freya::Vec3(10.0f, 3.0f, 10.0f));
+  freya::entity_add_billboard(s_app.world, bill_entt, freya::asset_group_get_id(s_app.group_id, "frogmon_stand"));
+
+  freya::entity_add_tag(s_app.world, bill_entt, "Billboard");
+
   // Done!
   return true;
 }

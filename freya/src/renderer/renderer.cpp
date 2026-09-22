@@ -246,7 +246,7 @@ static void init_defaults() {
     idx_desc.usage.index_buffer = true;
     idx_desc.data               = SG_RANGE(indices);
 
-    AssetID mesh_id                    = asset_group_push_mesh(s_renderer.group_id, vert_desc, idx_desc, 36);
+    AssetID mesh_id                    = asset_group_push_mesh(s_renderer.group_id, vert_desc, idx_desc, 6);
     s_renderer.defaults.billboard_mesh = asset_group_get_mesh(mesh_id);
   }
 
@@ -393,8 +393,7 @@ static void init_queues() {
 
     pipe_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3; // Position
     pipe_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT3; // Normal
-    pipe_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT3; // Tangant
-    pipe_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT2; // Texture coords
+    pipe_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT2; // Texture coords
     
     pipe_desc.index_type = SG_INDEXTYPE_UINT16;
 
@@ -918,8 +917,9 @@ void renderer_commit() {
   // Geometry...
 
   GeometryPassData geo_data = {
-    .skybox_queue = &s_renderer.queues[RENDER_QUEUE_SKYBOX],
-    .opaque_queue = &s_renderer.queues[RENDER_QUEUE_OPAQUE],
+    .skybox_queue    = &s_renderer.queues[RENDER_QUEUE_SKYBOX],
+    .opaque_queue    = &s_renderer.queues[RENDER_QUEUE_OPAQUE],
+    .billboard_queue = &s_renderer.queues[RENDER_QUEUE_BILLBOARD],
 
     .frame_data = s_renderer.frame_data, 
 

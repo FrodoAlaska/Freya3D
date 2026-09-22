@@ -106,6 +106,7 @@ void geometry_pass_init(RenderPass& pass, Window* window) {
 void geometry_pass_commit(RenderPass& pass, const GeometryPassData& data) {
   FREYA_DEBUG_ASSERT(data.skybox_queue, "Skybox queue must be valid");
   FREYA_DEBUG_ASSERT(data.opaque_queue, "Opaque queue must be valid");
+  FREYA_DEBUG_ASSERT(data.billboard_queue, "Billboard queue must be valid");
 
   // Set up the action 
 
@@ -142,6 +143,42 @@ void geometry_pass_commit(RenderPass& pass, const GeometryPassData& data) {
 
     sg_apply_bindings(entry.bindings);
     sg_draw(0, entry.elements_count, 1);
+  }
+  
+  //
+  // Flush the billboard queue
+  //
+  
+  RenderQueue* billboard_queue = data.billboard_queue;
+  { 
+    // Update the transforms buffer
+    // @NOTE: We need to do this check or we'll get a seg fault, 
+    // if the same is empty.
+
+    if(!billboard_queue->transforms.empty()) {
+      sg_range range = {
+        .ptr  = billboard_queue->transforms.data(), 
+        .size = billboard_queue->transforms.size() * sizeof(Mat4), 
+      };
+      sg_update_buffer(billboard_queue->transforms_buffer, range);
+    }
+    
+    // Apply the global uniforms
+
+    sg_apply_pipeline(billboard_queue->pipeline); 
+    sg_apply_uniforms(SHADER_BINDING_FRAME_DATA, SG_RANGE(data.frame_data));
+
+    // Render each entry
+
+    for(auto& entry : billboard_queue->entries) {
+      // Apply local uniforms
+      sg_apply_uniforms(SHADER_BINDING_MODEL, SG_RANGE(entry.model));
+
+      // Apply and draw
+
+      sg_apply_bindings(entry.bindings);
+      sg_draw(0, entry.elements_count, entry.instances_count);
+    }
   }
   
   //
