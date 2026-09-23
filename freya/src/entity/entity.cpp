@@ -263,17 +263,17 @@ void entity_camera_free_move(EntityWorld& world, EntityID& entt, f32 speed) {
 
   // Take input
   
-  if(input_key_down(KEY_UP)) {
+  if(input_key_down(KEY_W)) {
     transform.position += camera.front * speed;
   }
-  else if(input_key_down(KEY_DOWN)) {
+  else if(input_key_down(KEY_S)) {
     transform.position -= camera.front * speed;
   }
  
-  if(input_key_down(KEY_RIGHT)) {
+  if(input_key_down(KEY_D)) {
     transform.position += vec3_normalize(vec3_cross(camera.front, camera.up)) * speed;
   }
-  else if(input_key_down(KEY_LEFT)) {
+  else if(input_key_down(KEY_A)) {
     transform.position -= vec3_normalize(vec3_cross(camera.front, camera.up)) * speed;
   }
 }

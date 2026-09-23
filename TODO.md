@@ -3,11 +3,11 @@
 ## Immediate 
 
 - Billboard sprites (loading and rendering)
-    - Gather the billboard information from the billboard component 
-    - Flush the billboard queue in the geometry pass
+    - Enable blending to remove any uneeded pixels
     - Animated billboards
     - Have a texture offset Vec2 in the instance data that can be used to add into the texture coordinate 
     - That way, we can animate textures on meshes, thus effectively, enabling animated billboards
+    - The rotations of the billboard on the X-axis are flipped for some reason, and I cannot fix them
 
 - 3D Models (loading and rendering)
     - Load from a GLTF file 
