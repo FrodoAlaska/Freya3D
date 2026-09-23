@@ -3,7 +3,6 @@
 ## Immediate 
 
 - Billboard sprites (loading and rendering)
-    - Enable blending to remove any uneeded pixels
     - Animated billboards
     - Have a texture offset Vec2 in the instance data that can be used to add into the texture coordinate 
     - That way, we can animate textures on meshes, thus effectively, enabling animated billboards

@@ -395,7 +395,8 @@ static void init_queues() {
     pipe_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT3; // Normal
     pipe_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT2; // Texture coords
     
-    pipe_desc.index_type = SG_INDEXTYPE_UINT16;
+    pipe_desc.index_type                = SG_INDEXTYPE_UINT16;
+    pipe_desc.alpha_to_coverage_enabled = true;
 
     queue.pipeline = sg_make_pipeline(pipe_desc);
 
