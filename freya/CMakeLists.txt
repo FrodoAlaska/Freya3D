@@ -53,6 +53,7 @@ set(FREYA_SOURCES
   ${FREYA_SRC_DIR}/renderer/camera.cpp
   ${FREYA_SRC_DIR}/renderer/color.cpp
   ${FREYA_SRC_DIR}/renderer/renderer.cpp
+  ${FREYA_SRC_DIR}/renderer/animator.cpp
   
   # Renderer/passes
   ${FREYA_SRC_DIR}/renderer/passes/shadow_pass.cpp

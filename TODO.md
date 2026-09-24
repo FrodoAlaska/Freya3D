@@ -2,12 +2,6 @@
 
 ## Immediate 
 
-- Billboard sprites (loading and rendering)
-    - Animated billboards
-    - Have a texture offset Vec2 in the instance data that can be used to add into the texture coordinate 
-    - That way, we can animate textures on meshes, thus effectively, enabling animated billboards
-    - The rotations of the billboard on the X-axis are flipped for some reason, and I cannot fix them
-
 - 3D Models (loading and rendering)
     - Load from a GLTF file 
     - Write the info into the FRPKG file
@@ -40,3 +34,7 @@
 - 2D UI
     - Maybe have a completely seperate renderer to handle the 2D stuff 
     - We already the code for it. We just need to push it in
+
+- Billboard sprites
+    - The rotations of the billboard on the X-axis are flipped for some reason, and I cannot fix them
+    - Mabye have a better system for animated billboards that we can use on the GPU side

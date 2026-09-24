@@ -12,6 +12,8 @@ namespace freya { // Start of freya
 
 struct CameraDesc;
 struct Camera;
+struct Animator;
+struct AnimatorDesc;
 
 /// Forward declarations
 /// ----------------------------------------------------------------------
@@ -199,6 +201,10 @@ FREYA_API TimerComponent& entity_add_timer(EntityWorld& world,
                                            const TimerDesc& desc, 
                                            const OnTimerRunoutFn& runout_func, 
                                            void* user_data = nullptr);
+
+/// A helper function to add an animation component to `entt`, using the given 
+/// `desc`, mirroring the `animator_create` function.
+FREYA_API Animator& entity_add_animator(EntityWorld& world, EntityID& entt, const AnimatorDesc& desc);
 
 /// A helper function to add a directional light component to `entt`, using the given `direction` and `color`. 
 FREYA_API DirectionalLightComponent& entity_add_directional_light(EntityWorld& world, 

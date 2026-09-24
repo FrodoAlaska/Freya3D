@@ -94,6 +94,44 @@ struct Camera {
 ///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------
+/// AnimatorDesc
+struct AnimatorDesc {
+  /// The IDs of all the texture frames.
+  DynamicArray<AssetID> frames_id; 
+ 
+  /// The speed of the animation. 
+  f32 flip_speed;
+
+  /// Indicates whether the animation 
+  /// can loop to the beginning when finished.
+  ///
+  /// @NOTE: The default value is `true`.
+  bool can_loop      = true;
+
+  /// Indicates whether the animation can 
+  /// alternate directions when finished.
+  ///
+  /// @NOTE: The default value is `true`.
+  bool can_alternate = false;
+};
+/// AnimatorDesc
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
+/// Animator
+struct Animator {
+  Texture* current = nullptr;
+  DynamicArray<Texture> frames;
+
+  i32 current_index, direction;
+
+  f32 counter, flip_speed;
+  bool is_active, can_loop, can_alternate;
+};
+/// Animator
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
 /// RendererDefaults
 struct RendererDefaults {
   Texture diffuse_map;
@@ -133,6 +171,18 @@ FREYA_API void camera_follow(Camera& cam, const Vec3& target, const Vec3& offset
 FREYA_API void camera_follow_lerp(Camera& cam, const Vec3& target, const Vec3& offset, const f32 delta);
 
 /// Camera functions
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
+/// Animator functions
+
+/// Initialize an animation `out_anim` using the information found in `desc`.
+FREYA_API void animator_create(Animator& out_anim, const AnimatorDesc& desc);
+
+/// Update the given `anim` scaled to `delta_time`.
+FREYA_API void animator_update(Animator& anim, f32 dt);
+
+/// Animator functions
 ///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------

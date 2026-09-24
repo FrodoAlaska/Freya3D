@@ -32,8 +32,15 @@ bool texture_loader_load(const freya::FilePath& path, sg_image_desc& out_img, vo
   FREYA_DEBUG_ASSERT(out_data, "Invalid data pointer given to texture_loader_load");
 
   // Sanity check
+  // @NOTE: C++ sucks! You really don't have a function to make a whole string 
+  // into lowercase???? Really, man??
 
-  if(!check_valid_extension(freya::filepath_extension(path))) {
+  freya::FilePath ext = freya::filepath_extension(path);
+  for(auto& ch : ext) {
+    ch = std::tolower(ch);
+  } 
+
+  if(!check_valid_extension(ext)) {
     FREYA_LOG_WARN("Invalid texture file found at \'%s\'!", path.c_str());
     return false;
   }

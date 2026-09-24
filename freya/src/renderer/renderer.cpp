@@ -840,7 +840,7 @@ void renderer_prepare() {
   }
 
   // 
-  // Fill the billboard queue 
+  // Billboard
   //
   {
     auto view = world->view<BillboardComponent>();

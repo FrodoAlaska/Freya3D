@@ -55,6 +55,20 @@ void entity_world_update(EntityWorld& world, const f32 delta_time) {
     }
   }
   
+  // Animator
+  {
+    FREYA_PROFILE_FUNCTION_NAMED("entity_world_update(Animator)");
+
+    auto view = world.view<Animator, BillboardComponent>();
+    for(auto entt : view) {
+      Animator& anim = view.get<Animator>(entt);
+      animator_update(anim, delta_time);
+      
+      BillboardComponent& bill = view.get<BillboardComponent>(entt);
+      bill.texture             = *anim.current;
+    }
+  }
+  
   // Point lights
   {
     FREYA_PROFILE_FUNCTION_NAMED("entity_world_update(PointLightComponent)");
@@ -180,6 +194,13 @@ TimerComponent& entity_add_timer(EntityWorld& world,
   timer_create(timer, desc);
 
   return world.emplace<TimerComponent>(entt, timer, runout_func, user_data);
+}
+
+Animator& entity_add_animator(EntityWorld& world, EntityID& entt, const AnimatorDesc& desc) {
+  Animator anim;
+  animator_create(anim, desc);
+
+  return world.emplace<Animator>(entt, anim);
 }
 
 DirectionalLightComponent& entity_add_directional_light(EntityWorld& world, 

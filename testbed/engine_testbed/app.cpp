@@ -107,6 +107,20 @@ bool app_init(const freya::Args& args, freya::Window* window) {
 
   freya::entity_add_tag(s_app.world, bill_entt, "Billboard");
 
+  // Billboard animator init
+
+  freya::AnimatorDesc anim_desc = {};
+  anim_desc.flip_speed          = 0.1f;
+
+  anim_desc.frames_id.emplace_back(asset_group_get_id(s_app.group_id, "PEM2I0"));
+  anim_desc.frames_id.emplace_back(asset_group_get_id(s_app.group_id, "PEM2J0"));
+  anim_desc.frames_id.emplace_back(asset_group_get_id(s_app.group_id, "PEM2K0"));
+  anim_desc.frames_id.emplace_back(asset_group_get_id(s_app.group_id, "PEM2L0"));
+  anim_desc.frames_id.emplace_back(asset_group_get_id(s_app.group_id, "PEM2M0"));
+  anim_desc.frames_id.emplace_back(asset_group_get_id(s_app.group_id, "PEM2N0"));
+
+  freya::entity_add_animator(s_app.world, bill_entt, anim_desc);
+
   // Done!
   return true;
 }
