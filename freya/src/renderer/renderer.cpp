@@ -621,8 +621,12 @@ void renderer_prepare() {
 
   if(main_cam) {
     s_renderer.frame_data.u_view       = main_cam->view;
-    s_renderer.frame_data.u_projection = main_cam->projection;
     s_renderer.frame_data.u_camera_pos = main_cam->position;
+
+    s_renderer.frame_data.u_projection = mat4_perspective(main_cam->fov * DEG2RAD, 
+                                                          window_get_aspect_ratio(s_renderer.window),
+                                                          main_cam->near_plane, 
+                                                          main_cam->far_plane);
   }
 
   // Update the skybox component

@@ -61,9 +61,14 @@ bool app_init(const freya::Args& args, freya::Window* window) {
   s_app.camera_entt = freya::entity_create(s_app.world, freya::Vec3(10.0f, 0.0f, 10.0f));
 
   freya::CameraDesc cam_desc = {
-    .aspect_ratio = freya::window_get_aspect_ratio(window),
   };
   freya::entity_add_camera(s_app.world, s_app.camera_entt, cam_desc);
+
+  freya::entity_add_camera_controller(s_app.world, 
+                                      s_app.camera_entt,
+                                      freya::CAMERA_CONTROLLER_FREE, 
+                                      20.0f, 
+                                      0.1f);
 
   freya::entity_add_directional_light(s_app.world, s_app.camera_entt, freya::Vec3(0.0f));
   freya::entity_add_skybox(s_app.world, s_app.camera_entt, freya::asset_group_get_id(s_app.group_id, "corona"));
@@ -123,12 +128,6 @@ void app_update(freya::f32 dt) {
   if(freya::input_key_pressed(freya::KEY_F1)) {
     freya::gui_toggle_active();
     freya::input_cursor_show(freya::gui_is_active());
-  }
-
-  // Move camera
-
-  if(!freya::gui_is_active()) {
-    freya::entity_camera_free_move(s_app.world, s_app.camera_entt, 20.0f * dt);
   }
 
   // Update

@@ -19,3 +19,4 @@
 #include <freya_app.h>
 #include <freya_entity.h>
 #include <freya_noise.h>
+#include <freya_camera.h>

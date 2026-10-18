@@ -76,6 +76,30 @@ const Mat4 mat4_ortho(const f32 left, const f32 right, const f32 bottom, const f
   return glm::ortho(left, right, bottom, top, _near, _far);
 }
 
+Vec3 mat4_forward(const Mat4& mat) {
+  return vec3_normalize(-Vec3(mat[2]));
+}
+
+Vec3 mat4_backward(const Mat4& mat) {
+  return vec3_normalize(Vec3(mat[2]));
+}
+
+Vec3 mat4_up(const Mat4& mat) {
+  return vec3_normalize(Vec3(mat[1]));
+}
+
+Vec3 mat4_down(const Mat4& mat) {
+  return vec3_normalize(-Vec3(mat[1]));
+}
+
+Vec3 mat4_left(const Mat4& mat) {
+  return vec3_normalize(-Vec3(mat[0]));
+}
+
+Vec3 mat4_right(const Mat4& mat) {
+  return vec3_normalize(Vec3(mat[0]));
+}
+
 const Mat4 mat4_look_at(const Vec3& eye, const Vec3& center, const Vec3& up) {
   return glm::lookAt(eye, center, up);
 }

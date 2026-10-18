@@ -2,6 +2,7 @@
 
 #include "freya_noise.h"
 #include "freya_timer.h"
+#include "freya_camera.h"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -10,8 +11,6 @@ namespace freya { // Start of freya
 /// ----------------------------------------------------------------------
 /// Forward declarations
 
-struct CameraDesc;
-struct Camera;
 struct Animator;
 struct AnimatorDesc;
 
@@ -174,7 +173,14 @@ FREYA_API Comp& entity_add_component(EntityWorld& world, EntityID& entt, Args&&.
 /// @NOTE: The position of the given `desc` will be set inside the function
 /// using the current position of `entt`.
 /// However, the rest of the memebers of `desc` must be filled by the caller.
-FREYA_API Camera& entity_add_camera(EntityWorld& world, EntityID& entt, CameraDesc& desc);
+FREYA_API Camera& entity_add_camera(EntityWorld& world, EntityID& entt, const CameraDesc& desc);
+
+/// A helper function to add a camera controller to `entt`.
+FREYA_API CameraController& entity_add_camera_controller(EntityWorld& world, 
+                                                         EntityID& entt, 
+                                                         CameraControllerType type,
+                                                         f32 speed, 
+                                                         f32 sensitivity);
 
 /// A helper function to add an audio source to `entt`, using the information 
 /// in `desc`, and the `audio_buffer_id` as the main buffer.
@@ -250,14 +256,6 @@ FREYA_API MeshInstancedComponent& entity_add_mesh_instanced(EntityWorld& world,
 FREYA_API BillboardComponent& entity_add_billboard(EntityWorld& world, 
                                                    EntityID& entt, 
                                                    const AssetID& texture_id);
-
-/// A helper function to make the camera component of the given `entt` 
-/// mimick a free-form camera movement, giving it `speed` speed.
-FREYA_API void entity_camera_free_move(EntityWorld& world, EntityID& entt, f32 speed);
-
-/// A helper function to make the camera component of the given `entt` 
-/// mimick a first-person shooter camera movement, giving it `speed` speed.
-FREYA_API void entity_camera_fps_move(EntityWorld& world, EntityID& entt, f32 speed);
 
 /// Retrieve a reference to a generic component `Comp` from `entt` that lives in the given `world`.
 ///

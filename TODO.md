@@ -30,7 +30,7 @@
 
 - Renderer
     - Normal maps
-    - HDR colors
+    - HDR colors, exposure, and gamma correction. The colors in general are fucked. We need some tone-mapping, maybe?
     - We should think about the vertex situation. Should we have one unifying vertex type or multiple???
     - Implement acceleration spatial structures to improve the renderer's performance
 

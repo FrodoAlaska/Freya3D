@@ -88,6 +88,7 @@ set(FREYA_HEADERS
   ${FREYA_INCLUDE_DIR}/freya_threads.h
   ${FREYA_INCLUDE_DIR}/freya_timer.h
   ${FREYA_INCLUDE_DIR}/freya_window.h
+  ${FREYA_INCLUDE_DIR}/freya_camera.h
 )
 
 set(FREYA_PCH

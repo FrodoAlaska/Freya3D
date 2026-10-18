@@ -453,6 +453,24 @@ FREYA_API const Mat4 mat4_ortho(const f32 left, const f32 right,
 /// Generates a 4x4 look at view matrix, using ther left handed coordinate system 
 FREYA_API const Mat4 mat4_look_at(const Vec3& eye, const Vec3& center, const Vec3& up);
 
+/// Get the forward vector of the given `mat`.
+FREYA_API Vec3 mat4_forward(const Mat4& mat);
+
+/// Get the backward vector of the given `mat`.
+FREYA_API Vec3 mat4_backward(const Mat4& mat);
+
+/// Get the up vector of the given `mat`.
+FREYA_API Vec3 mat4_up(const Mat4& mat);
+
+/// Get the down vector of the given `mat`.
+FREYA_API Vec3 mat4_down(const Mat4& mat);
+
+/// Get the left vector of the given `mat`.
+FREYA_API Vec3 mat4_left(const Mat4& mat);
+
+/// Get the right vector of the given `mat`.
+FREYA_API Vec3 mat4_right(const Mat4& mat);
+
 /// Returns the raw array of floats of `mat` 
 FREYA_API const f32* mat4_raw_data(const Mat4& mat);
 

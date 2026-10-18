@@ -3,6 +3,7 @@
 #include "freya_logger.h"
 #include "freya_render.h"
 #include "freya_input.h"
+#include "freya_math.h"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -41,17 +42,50 @@ void entity_world_update(EntityWorld& world, const f32 delta_time) {
     }
   }
   
+  // CameraController
+  {
+    FREYA_PROFILE_FUNCTION_NAMED("entity_world_update(CameraController)");
+
+    auto view = world.view<CameraController, Camera>();
+    for(auto entt : view) {
+      // Retrieve all the required components
+
+      CameraController& controller = view.get<CameraController>(entt);
+      Camera& camera               = view.get<Camera>(entt);
+
+      // Move the controller according to its type 
+
+      switch(controller.type) {
+        case CAMERA_CONTROLLER_FREE:
+          camera_controller_free(controller, camera, delta_time);
+          break;
+        case CAMERA_CONTROLLER_FPS:
+          camera_controller_fps(controller, camera, delta_time);
+          break;
+      }
+    }
+  }
+  
   // Camera
   {
     FREYA_PROFILE_FUNCTION_NAMED("entity_world_update(Camera)");
 
     auto view = world.view<Camera, Transform>();
     for(auto entt : view) {
+      // Retrieve all the required components
+
       Camera& camera       = view.get<Camera>(entt);
       Transform& transform = view.get<Transform>(entt);
-       
+
+      // Attach the transform's postion and rotation to the camera
+
       camera.position = transform.position;
-      camera_update(camera);
+      camera.rotation = transform.rotation;
+
+      // Update the view matrix
+
+      camera.transform = mat4_translate(camera.position) * quat_to_mat4(camera.rotation);
+      camera.view      = mat4_inverse(camera.transform);
     }
   }
   
@@ -153,14 +187,29 @@ void entity_destroy(EntityWorld& world, EntityID& entt) {
   world.destroy(entt); 
 }
 
-Camera& entity_add_camera(EntityWorld& world, EntityID& entt, CameraDesc& desc) {
+Camera& entity_add_camera(EntityWorld& world, EntityID& entt, const CameraDesc& desc) {
   Transform& transform = world.get<Transform>(entt);
-  desc.position        = transform.position;
+  Camera& camera       = world.emplace<Camera>(entt); 
+  
+  camera.fov = desc.fov;
 
-  Camera& camera = world.emplace<Camera>(entt); 
-  camera_create(camera, desc);
+  camera.near_plane = desc.near_plane;
+  camera.far_plane  = desc.far_plane;
+
+  camera.position = transform.position;
+  camera.rotation = transform.rotation;
+
+  camera.view = Mat4(1.0f);
 
   return camera;
+}
+
+CameraController& entity_add_camera_controller(EntityWorld& world, 
+                                               EntityID& entt, 
+                                                CameraControllerType type,
+                                               f32 speed, 
+                                               f32 sensitivity) {
+  return world.emplace<CameraController>(entt, type, -90.0f, 0.0f, sensitivity, speed, Vec3(0.0f), Vec3(0.0f, 1.0f, 0.0f));
 }
 
 AudioSourceID& entity_add_audio_source(EntityWorld& world, 
@@ -264,72 +313,6 @@ BillboardComponent& entity_add_billboard(EntityWorld& world,
   
   // Done!
   return world.emplace<BillboardComponent>(entt, texture, transform_apply(transform));
-}
-
-void entity_camera_free_move(EntityWorld& world, EntityID& entt, f32 speed) {
-  // Retrive the relevant components
-
-  Camera& camera       = world.get<Camera>(entt);
-  Transform& transform = world.get<Transform>(entt);
-  
-  Vec2 mouse_offset = input_mouse_offset(); 
-
-  // Calculate the inner variables
-  
-  camera.yaw   = mouse_offset.x * camera.sensitivity;
-  camera.pitch = mouse_offset.y * camera.sensitivity;
-
-  camera.pitch = clamp_float(camera.pitch, -CAMERA_MAX_DEGREES, CAMERA_MAX_DEGREES);
-  camera.zoom  = clamp_float(camera.zoom, 1.0f, CAMERA_MAX_ZOOM);
-
-  // Take input
-  
-  if(input_key_down(KEY_W)) {
-    transform.position += camera.front * speed;
-  }
-  else if(input_key_down(KEY_S)) {
-    transform.position -= camera.front * speed;
-  }
- 
-  if(input_key_down(KEY_D)) {
-    transform.position += vec3_normalize(vec3_cross(camera.front, camera.up)) * speed;
-  }
-  else if(input_key_down(KEY_A)) {
-    transform.position -= vec3_normalize(vec3_cross(camera.front, camera.up)) * speed;
-  }
-}
-
-void entity_camera_fps_move(EntityWorld& world, EntityID& entt, f32 speed) {
-  // Retrive the relevant components
-
-  Camera& camera       = world.get<Camera>(entt);
-  Transform& transform = world.get<Transform>(entt);
-  
-  Vec2 mouse_offset = input_mouse_offset(); 
-
-  // Calculate the inner variables
-  
-  camera.yaw   = mouse_offset.x * camera.sensitivity;
-  camera.pitch = mouse_offset.y * camera.sensitivity;
-
-  camera.pitch = clamp_float(camera.pitch, -CAMERA_MAX_DEGREES, CAMERA_MAX_DEGREES);
-  camera.zoom  = clamp_float(camera.zoom, 1.0f, CAMERA_MAX_ZOOM);
-
-  // Take input 
-
-  if(input_key_down(KEY_W)) {
-    transform.position += Vec3(camera.front.x, 0.0f, camera.front.z) * speed;
-  }
-  else if(input_key_down(KEY_S)) {
-    transform.position -= Vec3(camera.front.x, 0.0f, camera.front.z) * speed;
-  }
- 
-  if(input_key_down(KEY_A)) {
-    transform.position -= vec3_normalize(vec3_cross(camera.front, camera.up)) * speed;
-  }
-  else if(input_key_down(KEY_D)) {
-    transform.position += vec3_normalize(vec3_cross(camera.front, camera.up)) * speed;
-  }
 }
 
 /// EntityID functions

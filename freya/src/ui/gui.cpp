@@ -360,20 +360,12 @@ void gui_edit_transform(const char* name, Transform* transform) {
 void gui_edit_camera(const char* name, Camera* camera) {
   ImGui::SeparatorText(name); 
   ImGui::PushID(name); 
-  
-  // Information
-  
-  ImGui::DragFloat("Yaw", &camera->yaw, s_gui.small_step);
-  ImGui::DragFloat("Pitch", &camera->pitch, s_gui.small_step);
 
   // Editables
  
-  ImGui::SliderFloat("Zoom", &camera->zoom, CAMERA_MAX_ZOOM, 0.0f, "Zoom: %.3f");
+  ImGui::SliderFloat("FOV", &camera->fov, CAMERA_MAX_ZOOM, 0.0f, "FOV: %.3f");
   ImGui::SliderFloat("Near", &camera->near_plane, 0.0001f, 1000.0f, "Near: %.3f");
   ImGui::SliderFloat("Far", &camera->far_plane, 0.0001f, 1000.0f, "Far: %.3f");
-  
-  ImGui::DragFloat("Sensitivity", &camera->sensitivity, s_gui.small_step);
-  ImGui::SliderFloat("Exposure", &camera->exposure, 0.0f, 10.0f, "Exposure: %.3f");
   
   ImGui::PopID(); 
 }
