@@ -902,12 +902,10 @@ AssetID asset_group_push_texture(const AssetGroupID& group_id, const MaterialTex
   u8 pixels[1024]; // width (16) * height (16) * channels (4)
 
   switch(type) {
-    case MATERIAL_TEXTURE_DIFFUSE: 
-    case MATERIAL_TEXTURE_SPECULAR: 
+    case MATERIAL_TEXTURE_ALBEDO: 
+    case MATERIAL_TEXTURE_ROUGHNESS: 
+    case MATERIAL_TEXTURE_METALLIC: 
       memory_set(pixels, 0xffffffff, sizeof(pixels));
-      break;
-    case MATERIAL_TEXTURE_EMISSIVE: 
-      memory_set(pixels, 0, sizeof(pixels));
       break;
     case MATERIAL_TEXTURE_NORMAL: {
       // Initializing the R and G channels to 0 
@@ -1085,35 +1083,37 @@ AssetID asset_group_push_material(const AssetGroupID& group_id, const MaterialDe
 
   Material material = {};
 
-  material.name            = desc.name;
-  material.color           = desc.color;
-  material.specular        = desc.specular;
-  material.emissive        = desc.emissive;
+  material.name  = desc.name;
+  material.color = desc.color;
+
+  material.roughness = desc.roughness;
+  material.metallic  = desc.metallic;
+
   material.shadows_enabled = desc.shadows_enabled;
 
   // Set the textures 
 
   const RendererDefaults& defaults = renderer_get_defaults();
 
-  material.diffuse_map  = defaults.diffuse_map;
-  material.specular_map = defaults.specular_map;
-  material.normal_map   = defaults.normal_map;
-  material.emissive_map = defaults.emissive_map;
+  material.albedo_map    = defaults.albedo_map;
+  material.roughness_map = defaults.roughness_map;
+  material.metallic_map  = defaults.metallic_map;
+  material.normal_map    = defaults.normal_map;
 
-  if(desc.diffuse_id.is_valid()) {
-    material.diffuse_map = asset_group_get_texture(desc.diffuse_id);
+  if(desc.albedo_id.is_valid()) {
+    material.albedo_map = asset_group_get_texture(desc.albedo_id);
   }
 
-  if(desc.specular_id.is_valid()) {
-    material.specular_map = asset_group_get_texture(desc.specular_id);
+  if(desc.roughness_id.is_valid()) {
+    material.roughness_map = asset_group_get_texture(desc.roughness_id);
+  }
+  
+  if(desc.metallic_id.is_valid()) {
+    material.metallic_map = asset_group_get_texture(desc.metallic_id);
   }
 
   if(desc.normal_id.is_valid()) {
     material.normal_map = asset_group_get_texture(desc.normal_id);
-  }
-
-  if(desc.emissive_id.is_valid()) {
-    material.emissive_map = asset_group_get_texture(desc.emissive_id);
   }
 
   // New material ID
@@ -1124,11 +1124,11 @@ AssetID asset_group_push_material(const AssetGroupID& group_id, const MaterialDe
   // Some useful debug info
   
   FREYA_LOG_DEBUG("Group \'%s\' pushed material:", group.name.c_str());
-  FREYA_LOG_DEBUG("     Name     = \'%s\'", material.name.c_str());
-  FREYA_LOG_DEBUG("     Color    = \'%f, %f, %f, %f\'", material.color.r, material.color.g, material.color.g, material.color.a);
-  FREYA_LOG_DEBUG("     Specular = \'%f\'", material.specular);
-  FREYA_LOG_DEBUG("     Emissive = \'%f\'", material.emissive);
-  FREYA_LOG_DEBUG("     Shadows  = %s", (material.shadows_enabled ? "true" : "false"));
+  FREYA_LOG_DEBUG("     Name      = \'%s\'", material.name.c_str());
+  FREYA_LOG_DEBUG("     Color     = \'%f, %f, %f, %f\'", material.color.r, material.color.g, material.color.g, material.color.a);
+  FREYA_LOG_DEBUG("     Roughness = \'%f\'", material.roughness);
+  FREYA_LOG_DEBUG("     Metallic  = \'%f\'", material.metallic);
+  FREYA_LOG_DEBUG("     Shadows   = %s", (material.shadows_enabled ? "true" : "false"));
 
   // Done!
   return id;

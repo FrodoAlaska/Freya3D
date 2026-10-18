@@ -544,8 +544,8 @@ void gui_edit_mesh_component(const char* name, MeshComponent* mesh) {
 
   ImGui::ColorEdit4("Color", &material.color[0]);
 
-  ImGui::SliderFloat("Specular intensity", &material.specular, 1.0f, 256.0f, "Specular intensity: %.3f");
-  ImGui::SliderFloat("Emissive intensity", &material.emissive, 0.01f, 1.0f, "Emissive intensity: %.3f");
+  ImGui::SliderFloat("Roughness intensity", &material.roughness, 1.0f, 256.0f, "Roughness intensity: %.3f");
+  ImGui::SliderFloat("Metallic intensity", &material.metallic, 0.01f, 1.0f, "Metallic intensity: %.3f");
 
   ImGui::Checkbox("Shadows enabled", &material.shadows_enabled);
 

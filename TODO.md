@@ -2,15 +2,18 @@
 
 ## Immediate 
 
+- Renderer 
+    - There's a weird black dot that appears for some fucking reason. Fix it!
+
 - 3D Models (loading and rendering)
     - Load from a GLTF file 
     - Write the info into the FRPKG file
     - Model component
     - Render the 3D model
+    - Use `meshoptimizer` to generate the normals and tangents of models, and compress the mesh files
 
-- Renderer 
-    - Normals suck for some reason. Fix them
-    - Fix the lighting. Keep it as blinn-phong, but get it better looking. Research more.
+- Physics 
+    - Either Box3D or Jolt... I'm not sure yet...
 
 ## Issues To Fix 
 
@@ -19,7 +22,6 @@
     - Instead of quats on the front end, we just use simple euler angles, and then calculate quats on the backend.
 
 - Camera 
-    - The camera needs some work 
     - We need to have a transform in the camera that will set its position, rotation, and scale 
     - Or maybe it's better to leave it since it is closer to the FPS spirit? We are going to only make FPS games after all.
 
@@ -28,8 +30,9 @@
 
 - Renderer
     - Normal maps
+    - HDR colors
     - We should think about the vertex situation. Should we have one unifying vertex type or multiple???
-    - Performance implementations (frustrum culling, instancing, etc...)
+    - Implement acceleration spatial structures to improve the renderer's performance
 
 - 2D UI
     - Maybe have a completely seperate renderer to handle the 2D stuff 

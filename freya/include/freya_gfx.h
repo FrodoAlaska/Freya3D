@@ -118,16 +118,16 @@ struct Mesh {
 /// MaterialDesc
 struct MaterialDesc {
   String name = "default";
-
-  AssetID diffuse_id  = {};
-  AssetID specular_id = {};
-  AssetID normal_id   = {};
-  AssetID emissive_id = {};
+  
+  AssetID albedo_id    = {};
+  AssetID roughness_id = {};
+  AssetID metallic_id  = {};
+  AssetID normal_id    = {};
 
   Vec4 color = Vec4(1.0f);
 
-  f32 specular = 1.0f;
-  f32 emissive = 1.0f;
+  f32 roughness = 1.0f; 
+  f32 metallic  = 0.0f; 
 
   bool shadows_enabled = true;
 };
@@ -139,15 +139,15 @@ struct MaterialDesc {
 struct Material {
   String name = "default";
 
-  Texture diffuse_map;
-  Texture specular_map; 
+  Texture albedo_map;
+  Texture roughness_map; 
+  Texture metallic_map; 
   Texture normal_map;
-  Texture emissive_map;
 
   Vec4 color;
 
-  f32 specular;
-  f32 emissive;
+  f32 roughness; 
+  f32 metallic; 
 
   bool shadows_enabled;
 };

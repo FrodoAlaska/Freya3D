@@ -30,7 +30,7 @@ void geometry_pass_init(RenderPass& pass, Window* window) {
     image_desc.height       = pass.frame_size.y;
     image_desc.sample_count = window_get_samples_count(window);
 
-    image_desc.pixel_format           = SG_PIXELFORMAT_RGBA8; 
+    image_desc.pixel_format           = SG_PIXELFORMAT_RGBA32F; 
     image_desc.usage.color_attachment = true;
 
     sg_image color_img = sg_make_image(image_desc);

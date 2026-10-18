@@ -134,10 +134,10 @@ struct Animator {
 ///---------------------------------------------------------------------------------------------------------------------
 /// RendererDefaults
 struct RendererDefaults {
-  Texture diffuse_map;
-  Texture specular_map;
+  Texture albedo_map;
+  Texture roughness_map;
+  Texture metallic_map;
   Texture normal_map;
-  Texture emissive_map;
 
   Material material;
 

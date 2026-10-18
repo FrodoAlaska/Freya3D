@@ -49,10 +49,10 @@ bool app_init(const freya::Args& args, freya::Window* window) {
   freya::MaterialDesc mat_desc = {
     .name = "entity_material", 
 
-    .diffuse_id  = freya::asset_group_get_id(s_app.group_id, "container_diffuse"),
-    .specular_id = freya::asset_group_get_id(s_app.group_id, "container_specular"),
-
-    .specular = 32.0f,
+    .albedo_id    = freya::asset_group_get_id(s_app.group_id, "PaintedMetal_BaseColor"),
+    .roughness_id = freya::asset_group_get_id(s_app.group_id, "PaintedMetal_Roughness"),
+    .metallic_id  = freya::asset_group_get_id(s_app.group_id, "PaintedMetal_Metallic"),
+    .normal_id    = freya::asset_group_get_id(s_app.group_id, "PaintedMetal_Normal"),
   };
   freya::AssetID material_id = freya::asset_group_push_material(s_app.group_id, mat_desc);
 
@@ -65,23 +65,22 @@ bool app_init(const freya::Args& args, freya::Window* window) {
   };
   freya::entity_add_camera(s_app.world, s_app.camera_entt, cam_desc);
 
-  freya::entity_add_directional_light(s_app.world, s_app.camera_entt, freya::Vec3(1.0f, -1.0f, 1.0f));
+  freya::entity_add_directional_light(s_app.world, s_app.camera_entt, freya::Vec3(0.0f));
   freya::entity_add_skybox(s_app.world, s_app.camera_entt, freya::asset_group_get_id(s_app.group_id, "corona"));
-
-  // Point light init
-
-  freya::EntityID point_entt = freya::entity_create(s_app.world, freya::Vec3(10.0f, 0.0f, 10.0f));
-  freya::entity_add_point_light(s_app.world, point_entt, freya::COLOR_RED);
 
   // Mesh 1 init
 
   freya::EntityID mesh_entt = freya::entity_create(s_app.world, freya::Vec3(10.0f, 0.0f, 10.0f)); 
+  
   freya::entity_add_mesh(s_app.world, mesh_entt, mesh_id, material_id);
+  freya::entity_add_tag(s_app.world, mesh_entt, "Mesh");
 
-  // Mesh 2 init
-
-  freya::EntityID mesh_entt2 = freya::entity_create(s_app.world, freya::Vec3(10.0f, 3.0f, 10.0f)); 
-  freya::entity_add_mesh(s_app.world, mesh_entt2, mesh_id, material_id);
+  // Point light init
+  
+  freya::EntityID point_light = freya::entity_create(s_app.world, freya::Vec3(10.0f, 0.0f, 10.0f)); 
+  
+  freya::entity_add_tag(s_app.world, point_light, "Point Light");
+  freya::entity_add_point_light(s_app.world, point_light);
 
   // Plane init
 
@@ -90,36 +89,15 @@ bool app_init(const freya::Args& args, freya::Window* window) {
   mat_desc = {
     .name = "plane_material", 
 
-    .diffuse_id = freya::asset_group_get_id(s_app.group_id, "brickwall"),
-    .normal_id  = freya::asset_group_get_id(s_app.group_id, "brickwall_normal"),
-
-    .specular = 32.0f,
+    .albedo_id = freya::asset_group_get_id(s_app.group_id, "brickwall"),
+    .normal_id = freya::asset_group_get_id(s_app.group_id, "brickwall_normal"),
   };
   material_id = freya::asset_group_push_material(s_app.group_id, mat_desc);
   
   freya::EntityID plane_entt = freya::entity_create(s_app.world, freya::Vec3(10.0f, -1.0f, 10.0f), freya::Vec3(12.0f, 0.1f, 12.0f)); 
+  
   freya::entity_add_mesh(s_app.world, plane_entt, mesh_id, material_id);
-
-  // Billboard init
-
-  freya::EntityID bill_entt = freya::entity_create(s_app.world, freya::Vec3(10.0f, 5.0f, 10.0f));
-  freya::entity_add_billboard(s_app.world, bill_entt, freya::asset_group_get_id(s_app.group_id, "frogmon_stand"));
-
-  freya::entity_add_tag(s_app.world, bill_entt, "Billboard");
-
-  // Billboard animator init
-
-  freya::AnimatorDesc anim_desc = {};
-  anim_desc.flip_speed          = 0.1f;
-
-  anim_desc.frames_id.emplace_back(asset_group_get_id(s_app.group_id, "PEM2I0"));
-  anim_desc.frames_id.emplace_back(asset_group_get_id(s_app.group_id, "PEM2J0"));
-  anim_desc.frames_id.emplace_back(asset_group_get_id(s_app.group_id, "PEM2K0"));
-  anim_desc.frames_id.emplace_back(asset_group_get_id(s_app.group_id, "PEM2L0"));
-  anim_desc.frames_id.emplace_back(asset_group_get_id(s_app.group_id, "PEM2M0"));
-  anim_desc.frames_id.emplace_back(asset_group_get_id(s_app.group_id, "PEM2N0"));
-
-  freya::entity_add_animator(s_app.world, bill_entt, anim_desc);
+  freya::entity_add_tag(s_app.world, plane_entt, "Plane");
 
   // Done!
   return true;

@@ -63,10 +63,10 @@ enum AssetType {
 ///---------------------------------------------------------------------------------------------------------------------
 /// MaterialTextureType
 enum MaterialTextureType {
-  MATERIAL_TEXTURE_DIFFUSE,
-  MATERIAL_TEXTURE_SPECULAR,
+  MATERIAL_TEXTURE_ALBEDO,
+  MATERIAL_TEXTURE_ROUGHNESS,
+  MATERIAL_TEXTURE_METALLIC,
   MATERIAL_TEXTURE_NORMAL,
-  MATERIAL_TEXTURE_EMISSIVE,
 };
 /// MaterialTextureType
 ///---------------------------------------------------------------------------------------------------------------------

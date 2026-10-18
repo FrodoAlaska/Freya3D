@@ -112,24 +112,24 @@ static void init_defaults() {
   //
   {
     AssetID texture_ids[] = {
-      asset_group_push_texture(s_renderer.group_id, MATERIAL_TEXTURE_DIFFUSE),
-      asset_group_push_texture(s_renderer.group_id, MATERIAL_TEXTURE_SPECULAR),
+      asset_group_push_texture(s_renderer.group_id, MATERIAL_TEXTURE_ALBEDO),
+      asset_group_push_texture(s_renderer.group_id, MATERIAL_TEXTURE_ROUGHNESS),
+      asset_group_push_texture(s_renderer.group_id, MATERIAL_TEXTURE_METALLIC),
       asset_group_push_texture(s_renderer.group_id, MATERIAL_TEXTURE_NORMAL),
-      asset_group_push_texture(s_renderer.group_id, MATERIAL_TEXTURE_EMISSIVE),
     };
 
-    s_renderer.defaults.diffuse_map  = asset_group_get_texture(texture_ids[0]);
-    s_renderer.defaults.specular_map = asset_group_get_texture(texture_ids[1]);
-    s_renderer.defaults.normal_map   = asset_group_get_texture(texture_ids[2]);
-    s_renderer.defaults.emissive_map = asset_group_get_texture(texture_ids[3]);
+    s_renderer.defaults.albedo_map    = asset_group_get_texture(texture_ids[0]);
+    s_renderer.defaults.roughness_map = asset_group_get_texture(texture_ids[1]);
+    s_renderer.defaults.metallic_map  = asset_group_get_texture(texture_ids[3]);
+    s_renderer.defaults.normal_map    = asset_group_get_texture(texture_ids[2]);
 
     // Material init
 
     MaterialDesc mat_desc = {
-      .diffuse_id  = texture_ids[0], 
-      .specular_id = texture_ids[1], 
-      .normal_id   = texture_ids[2], 
-      .emissive_id = texture_ids[3], 
+      .albedo_id    = texture_ids[0], 
+      .roughness_id = texture_ids[1], 
+      .metallic_id  = texture_ids[3], 
+      .normal_id    = texture_ids[2], 
     };
     s_renderer.defaults.material = asset_group_get_material(asset_group_push_material(s_renderer.group_id, mat_desc));
   }
@@ -346,8 +346,9 @@ static void init_queues() {
     pipe_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT3; // Normal
     pipe_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT3; // Tangant
     pipe_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT2; // Texture coords
-    
-    pipe_desc.index_type = SG_INDEXTYPE_UINT16;
+   
+    pipe_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA32F;
+    pipe_desc.index_type             = SG_INDEXTYPE_UINT16;
 
     queue.pipeline = sg_make_pipeline(pipe_desc);
 
@@ -394,6 +395,8 @@ static void init_queues() {
     pipe_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3; // Position
     pipe_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT3; // Normal
     pipe_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT2; // Texture coords
+    
+    pipe_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA32F;
     
     pipe_desc.index_type                = SG_INDEXTYPE_UINT16;
     pipe_desc.alpha_to_coverage_enabled = true;
@@ -452,6 +455,8 @@ static void init_queues() {
 
     pipe_desc.shader       = asset_group_get_shader(s_renderer.shaders[SHADER_SKYBOX]); 
     pipe_desc.sample_count = window_get_samples_count(s_renderer.window);
+    
+    pipe_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA32F;
 
     pipe_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3; // Position
     pipe_desc.index_type             = SG_INDEXTYPE_UINT16;
@@ -704,24 +709,24 @@ void renderer_prepare() {
       entry.bindings.index_buffer      = comp.mesh.index_buffer; 
 
       entry.bindings.views[0] = opaque.transforms_view;
-      entry.bindings.views[1] = comp.material.diffuse_map.view;
-      entry.bindings.views[2] = comp.material.specular_map.view;
-      entry.bindings.views[3] = comp.material.normal_map.view;
-      entry.bindings.views[4] = comp.material.emissive_map.view;
+      entry.bindings.views[1] = comp.material.albedo_map.view;
+      entry.bindings.views[2] = comp.material.roughness_map.view;
+      entry.bindings.views[3] = comp.material.metallic_map.view;
+      entry.bindings.views[4] = comp.material.normal_map.view;
       entry.bindings.views[5] = s_renderer.passes[RENDER_PASS_SHADOW].attachments[0];
 
-      entry.bindings.samplers[0] = comp.material.diffuse_map.sampler;
-      entry.bindings.samplers[1] = comp.material.specular_map.sampler;
-      entry.bindings.samplers[2] = comp.material.normal_map.sampler;
-      entry.bindings.samplers[3] = comp.material.emissive_map.sampler;
+      entry.bindings.samplers[0] = comp.material.albedo_map.sampler;
+      entry.bindings.samplers[1] = comp.material.roughness_map.sampler;
+      entry.bindings.samplers[2] = comp.material.metallic_map.sampler;
+      entry.bindings.samplers[3] = comp.material.normal_map.sampler;
       entry.bindings.samplers[4] = s_renderer.passes[RENDER_PASS_SHADOW].sampler;
 
       // Setup the material 
 
       entry.material = {
         comp.material.color, 
-        comp.material.specular, 
-        comp.material.emissive,
+        comp.material.roughness, 
+        comp.material.metallic,
       };
 
       // Fill the rest of the entry
@@ -780,24 +785,24 @@ void renderer_prepare() {
       entry.bindings.index_buffer      = comp.mesh.index_buffer; 
 
       entry.bindings.views[0] = opaque.transforms_view;
-      entry.bindings.views[1] = comp.material.diffuse_map.view;
-      entry.bindings.views[2] = comp.material.specular_map.view;
-      entry.bindings.views[3] = comp.material.normal_map.view;
-      entry.bindings.views[4] = comp.material.emissive_map.view;
+      entry.bindings.views[1] = comp.material.albedo_map.view;
+      entry.bindings.views[2] = comp.material.roughness_map.view;
+      entry.bindings.views[3] = comp.material.metallic_map.view;
+      entry.bindings.views[4] = comp.material.normal_map.view;
       entry.bindings.views[5] = s_renderer.passes[RENDER_PASS_SHADOW].attachments[0];
 
-      entry.bindings.samplers[0] = comp.material.diffuse_map.sampler;
-      entry.bindings.samplers[1] = comp.material.specular_map.sampler;
-      entry.bindings.samplers[2] = comp.material.normal_map.sampler;
-      entry.bindings.samplers[3] = comp.material.emissive_map.sampler;
+      entry.bindings.samplers[0] = comp.material.albedo_map.sampler;
+      entry.bindings.samplers[1] = comp.material.roughness_map.sampler;
+      entry.bindings.samplers[2] = comp.material.metallic_map.sampler;
+      entry.bindings.samplers[3] = comp.material.normal_map.sampler;
       entry.bindings.samplers[4] = s_renderer.passes[RENDER_PASS_SHADOW].sampler;
-      
+
       // Setup the material 
 
       entry.material = {
         comp.material.color, 
-        comp.material.specular, 
-        comp.material.emissive,
+        comp.material.roughness, 
+        comp.material.metallic,
       };
 
       // Fill the rest of the entry
