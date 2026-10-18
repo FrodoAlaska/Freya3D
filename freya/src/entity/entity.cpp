@@ -70,19 +70,11 @@ void entity_world_update(EntityWorld& world, const f32 delta_time) {
   {
     FREYA_PROFILE_FUNCTION_NAMED("entity_world_update(Camera)");
 
-    auto view = world.view<Camera, Transform>();
+    auto view = world.view<Camera>();
     for(auto entt : view) {
-      // Retrieve all the required components
-
-      Camera& camera       = view.get<Camera>(entt);
-      Transform& transform = view.get<Transform>(entt);
-
-      // Attach the transform's postion and rotation to the camera
-
-      camera.position = transform.position;
-      camera.rotation = transform.rotation;
-
       // Update the view matrix
+      
+      Camera& camera = view.get<Camera>(entt);
 
       camera.transform = mat4_translate(camera.position) * quat_to_mat4(camera.rotation);
       camera.view      = mat4_inverse(camera.transform);

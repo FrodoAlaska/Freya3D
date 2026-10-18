@@ -14,15 +14,15 @@ void camera_controller_free(CameraController& controller, Camera& camera, f32 de
   Vec2 mouse_offset = input_mouse_offset();
 
   controller.yaw   = mouse_offset.x * controller.sensitivity;
-  controller.pitch = mouse_offset.y * controller.sensitivity;
+  controller.pitch = -(mouse_offset.y * controller.sensitivity);
 
   controller.pitch = clamp_float(controller.pitch, -CAMERA_MAX_DEGREES, CAMERA_MAX_DEGREES);
   camera.fov       = clamp_float(camera.fov, 1.0f, CAMERA_MAX_ZOOM);
 
   // Update the rotation
 
-  Quat yaw_quat   = quat_angle_axis(Vec3(0.0f, 1.0f, 0.0f), controller.yaw);
-  Quat pitch_quat = quat_angle_axis(Vec3(1.0f, 0.0f, 0.0f), controller.pitch);
+  Quat yaw_quat   = quat_angle_axis(Vec3(0.0f, -1.0f, 0.0f), controller.yaw * DEG2RAD);
+  Quat pitch_quat = quat_angle_axis(Vec3(-1.0f, 0.0f, 0.0f), controller.pitch * DEG2RAD);
 
   camera.rotation = yaw_quat * pitch_quat;
 
@@ -44,10 +44,10 @@ void camera_controller_free(CameraController& controller, Camera& camera, f32 de
   }
  
   if(input_key_down(KEY_A)) {
-    camera.position += vec3_normalize(vec3_cross(controller.front, controller.up)) * speed;
+    camera.position -= vec3_normalize(vec3_cross(controller.front, controller.up)) * speed;
   }
   else if(input_key_down(KEY_D)) {
-    camera.position -= vec3_normalize(vec3_cross(controller.front, controller.up)) * speed;
+    camera.position += vec3_normalize(vec3_cross(controller.front, controller.up)) * speed;
   }
 }
 
@@ -57,15 +57,15 @@ void camera_controller_fps(CameraController& controller, Camera& camera, f32 del
   Vec2 mouse_offset = input_mouse_offset();
 
   controller.yaw   = mouse_offset.x * controller.sensitivity;
-  controller.pitch = mouse_offset.y * controller.sensitivity;
+  controller.pitch = -(mouse_offset.y * controller.sensitivity);
 
   controller.pitch = clamp_float(controller.pitch, -CAMERA_MAX_DEGREES, CAMERA_MAX_DEGREES);
   camera.fov       = clamp_float(camera.fov, 1.0f, CAMERA_MAX_ZOOM);
 
   // Update the rotation
 
-  Quat yaw_quat   = quat_angle_axis(Vec3(0.0f, 1.0f, 0.0f), controller.yaw);
-  Quat pitch_quat = quat_angle_axis(Vec3(1.0f, 0.0f, 0.0f), controller.pitch);
+  Quat yaw_quat   = quat_angle_axis(Vec3(0.0f, -1.0f, 0.0f), controller.yaw * DEG2RAD);
+  Quat pitch_quat = quat_angle_axis(Vec3(-1.0f, 0.0f, 0.0f), controller.pitch * DEG2RAD);
 
   camera.rotation = yaw_quat * pitch_quat;
 
@@ -85,11 +85,11 @@ void camera_controller_fps(CameraController& controller, Camera& camera, f32 del
     camera.position -= Vec3(controller.front.x, 0.0f, controller.front.z) * speed;
   }
   
-  if(input_key_down(KEY_RIGHT)) {
-    camera.position += vec3_normalize(vec3_cross(controller.front, controller.up)) * speed;
-  }
-  else if(input_key_down(KEY_LEFT)) {
+  if(input_key_down(KEY_A)) {
     camera.position -= vec3_normalize(vec3_cross(controller.front, controller.up)) * speed;
+  }
+  else if(input_key_down(KEY_D)) {
+    camera.position += vec3_normalize(vec3_cross(controller.front, controller.up)) * speed;
   }
 }
 
