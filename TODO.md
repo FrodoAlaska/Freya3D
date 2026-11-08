@@ -10,10 +10,6 @@
 
 ## Immediate 
 
-- Renderer 
-    - There's a weird black dot that appears for some fucking reason. Fix it!
-    - Shadows?
-
 - 3D Models (loading and rendering)
     - Load from a GLTF file 
     - Write the info into the FRPKG file
@@ -37,7 +33,6 @@
     - They are shit. Fix 'em 
 
 - Renderer
-    - Normal maps
     - IBL (Image-Based Lighting)
     - HDR colors, exposure, and gamma correction. The colors in general are fucked. We need some tone-mapping, maybe?
     - We should think about the vertex situation. Should we have one unifying vertex type or multiple???
