@@ -6,7 +6,7 @@
 /// ----------------------------------------------------------------------
 /// Font loader functions
 
-bool font_loader_load(const freya::FilePath& path, freya::DynamicArray<freya::u8>& font_data) {
+bool font_loader_load(FontLoader& out_loader, const freya::FilePath& path) {
   // Open the file
 
   freya::File file;
@@ -20,14 +20,21 @@ bool font_loader_load(const freya::FilePath& path, freya::DynamicArray<freya::u8
   // Load the actual data from the file
 
   freya::sizei data_size = freya::filesystem_get_size(path);
-  font_data.resize(data_size);
+  out_loader.bytes.resize(data_size);
 
-  freya::file_read_bytes(file, font_data.data(), data_size); 
+  freya::file_read_bytes(file, out_loader.bytes.data(), data_size); 
 
   // Done!
    
   FREYA_LOG_TRACE("Successfully loaded font at '\%s\'", path.c_str());
   return true;
+}
+
+void font_loader_save(const FontLoader& loader, freya::File& file) {
+  freya::u32 data_size = (freya::u32)loader.bytes.size();
+
+  freya::file_write_bytes(file, &data_size, sizeof(data_size));
+  freya::file_write_bytes(file, loader.bytes.data(), loader.bytes.size());
 }
 
 /// Font loader functions

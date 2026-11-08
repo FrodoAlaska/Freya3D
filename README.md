@@ -13,6 +13,7 @@ A 3D game engine inspired by the games of the early 2000s. What does that mean? 
 - [OpenAL-Soft](https://github.com/kcat/openal-soft)
 - [EnTT](https://github.com/skypjack/entt)
 - [stb](https://github.com/nothings/stb)
+- [cgltf](https://github.com/jkuhlmann/cgltf)
 - [dr_libs](https://github.com/mackron/dr_libs)
 - [Tracy](https://github.com/wolfpld/tracy)
 - [moodycamel](https://github.com/cameron314/concurrentqueue)

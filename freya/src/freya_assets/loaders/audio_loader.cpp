@@ -90,20 +90,20 @@ static bool ogg_convert(const freya::FilePath& path, freya::AudioBufferDesc* aud
 /// ----------------------------------------------------------------------
 /// Audio loader functions
 
-bool audio_loader_load(const freya::FilePath& path, freya::AudioBufferDesc* audio_desc) {
+bool audio_loader_load(freya::AudioBufferDesc& out_desc, const freya::FilePath& path) {
   // Convert the correct audio format
 
   freya::FilePath ext = freya::filepath_extension(path);
   bool has_loaded     = false;
 
   if(ext == ".mp3" || ext == ".MP3") {
-    has_loaded = mp3_convert(path, audio_desc);
+    has_loaded = mp3_convert(path, &out_desc);
   }
   else if(ext == ".wav" || ext == ".WAV") {
-    has_loaded = wav_convert(path, audio_desc);
+    has_loaded = wav_convert(path, &out_desc);
   }
   else if(ext == ".ogg" || ext == ".OGG") {
-    has_loaded = ogg_convert(path, audio_desc);
+    has_loaded = ogg_convert(path, &out_desc);
   }
 
   // Log depending on the outcome
@@ -117,6 +117,28 @@ bool audio_loader_load(const freya::FilePath& path, freya::AudioBufferDesc* audi
 
   // Done!
   return has_loaded;
+}
+
+void audio_loader_save(const freya::AudioBufferDesc& audio_desc, freya::File& file) { 
+  // Write the format
+
+  freya::u8 format = (freya::u8)audio_desc.format;
+  freya::file_write_bytes(file, &format, sizeof(format));
+
+  // Write the channels
+
+  freya::u8 channels = (freya::u8)audio_desc.channels;
+  freya::file_write_bytes(file, &channels, sizeof(channels));
+
+  // Write the sample rate
+  freya::file_write_bytes(file, &audio_desc.sample_rate, sizeof(audio_desc.sample_rate));
+
+  // Write the samples
+
+  freya::u32 size = (freya::u32)audio_desc.size;
+
+  freya::file_write_bytes(file, &size, sizeof(size));
+  freya::file_write_bytes(file, audio_desc.data, size);
 }
 
 void audio_loader_unload(freya::AudioBufferDesc& audio_desc) {

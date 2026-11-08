@@ -102,52 +102,14 @@ static void build_textures(File& file, const ListSection& section) {
 
     FilePath name = filepath_stem(path);
     file_write_bytes(file, name);
-
+     
     // Load the asset
-     
-    sg_sampler_desc sampler_desc = {};
-    sampler_desc.min_filter      = SG_FILTER_NEAREST;
-    sampler_desc.mag_filter      = SG_FILTER_NEAREST;
 
-    sg_image_desc image_desc = {};
-    void* pixels             = nullptr;
-
-    texture_loader_load(path, image_desc, &pixels);
+    TextureLoader texture;
+    texture_loader_load(texture, path);
      
-    // 
     // Write the asset 
-    //
-  
-    // Write the texture's size
-
-    u16 width  = (u16)image_desc.width;
-    u16 height = (u16)image_desc.height;
-
-    file_write_bytes(file, &width, sizeof(width));
-    file_write_bytes(file, &height, sizeof(height));
-
-    // Write the format
-
-    u8 format = (u8)image_desc.pixel_format;
-    file_write_bytes(file, &format, sizeof(format));
-
-    // Write the filters 
-
-    u8 min_filter = (u8)sampler_desc.min_filter;
-    u8 mag_filter = (u8)sampler_desc.mag_filter;
-
-    file_write_bytes(file, &min_filter, sizeof(min_filter));
-    file_write_bytes(file, &mag_filter, sizeof(mag_filter));
-
-    // Write the data
-
-    u32 pixel_size = (format == SG_PIXELFORMAT_RGBA32F) ? 4 : 1; 
-    u32 data_size  = (width * height) * 4 * pixel_size; // 4 = color components
-
-    file_write_bytes(file, pixels, data_size);
-
-    // Free the data
-    memory_free(pixels); 
+    texture_loader_save(texture, file);
   }
 }
 
@@ -168,48 +130,12 @@ static void build_cubemaps(File& file, const ListSection& section) {
     file_write_bytes(file, name);
 
     // Load the asset
-     
-    sg_sampler_desc sampler_desc = {};
-    sampler_desc.min_filter      = SG_FILTER_LINEAR;
-    sampler_desc.mag_filter      = SG_FILTER_LINEAR;
 
-    sg_image_desc image_desc = {};
-    u8* pixels               = nullptr;
-
-    cubemap_loader_load(path, image_desc, &pixels);
-     
-    // 
-    // Write the asset 
-    //
-      
-    // Write the cubemap's size (size per-face)
-
-    u16 width  = (u16)image_desc.width;
-    u16 height = (u16)image_desc.height;
-
-    file_write_bytes(file, &width, sizeof(width));
-    file_write_bytes(file, &height, sizeof(height));
-
-    // Write the format
-
-    u8 format = (u8)image_desc.pixel_format;
-    file_write_bytes(file, &format, sizeof(format));
-
-    // Write the filters 
-
-    u8 min_filter = (u8)sampler_desc.min_filter;
-    u8 mag_filter = (u8)sampler_desc.mag_filter;
-
-    file_write_bytes(file, &min_filter, sizeof(min_filter));
-    file_write_bytes(file, &mag_filter, sizeof(mag_filter));
-
-    // Write the data
+    CubemapLoader cubemap;
+    cubemap_loader_load(cubemap, path);
     
-    u32 data_size = CUBEMAP_FACES_MAX * ((width * height) * 4); // 4 = color components
-    file_write_bytes(file, pixels, data_size);
-
-    // Free the data 
-    memory_free(pixels);
+    // Write the asset 
+    cubemap_loader_save(cubemap, file); 
   }
 }
 
@@ -229,17 +155,23 @@ static void build_models(File& file, const ListSection& section) {
     FilePath name = filepath_stem(path);
     file_write_bytes(file, name);
 
-    // @TODO (Asset/models)
+    // Load the model from the loader 
+    
+    ModelLoader model;
+    model_loader_load(model, path);
+
+    // Write the asset 
+    model_loader_save(model, file);
   }
 }
 
-static void build_fonts(File& pkg_file, const ListSection& section) {
+static void build_fonts(File& file, const ListSection& section) {
   FREYA_PROFILE_FUNCTION();
 
   // Write the number of assets of this type
 
   u16 asset_count = (u16)section.assets.size(); 
-  file_write_bytes(pkg_file, &asset_count, sizeof(asset_count));
+  file_write_bytes(file, &asset_count, sizeof(asset_count));
   
   // Load and write all of the assets
   
@@ -247,19 +179,15 @@ static void build_fonts(File& pkg_file, const ListSection& section) {
     // Write the name of the asset
 
     FilePath name = filepath_stem(path);
-    file_write_bytes(pkg_file, name);
+    file_write_bytes(file, name);
 
     // Load the asset
 
-    DynamicArray<u8> bytes;
-    font_loader_load(path, bytes);
+    FontLoader font;
+    font_loader_load(font, path);
 
-    // Save the asset
-    
-    u32 data_size = (u32)bytes.size();
-
-    file_write_bytes(pkg_file, &data_size, sizeof(data_size));
-    file_write_bytes(pkg_file, bytes.data(), bytes.size());
+    // Write the asset
+    font_loader_save(font, file);
   }
 }
 
@@ -281,42 +209,21 @@ static void build_audio_buffers(File& file, const ListSection& section) {
 
     // Load the asset
 
-    AudioBufferDesc audio_desc{};
-    audio_loader_load(path, &audio_desc);
+    AudioBufferDesc audio_desc = {};
+    audio_loader_load(audio_desc, path);
 
-    //
     // Write the asset
-    //
-  
-    // Write the format
-
-    u8 format = (u8)audio_desc.format;
-    file_write_bytes(file, &format, sizeof(format));
-
-    // Write the channels
-
-    u8 channels = (u8)audio_desc.channels;
-    file_write_bytes(file, &channels, sizeof(channels));
-
-    // Write the sample rate
-    file_write_bytes(file, &audio_desc.sample_rate, sizeof(audio_desc.sample_rate));
-
-    // Write the samples
-
-    u32 size = (u32)audio_desc.size;
-
-    file_write_bytes(file, &size, sizeof(size));
-    file_write_bytes(file, audio_desc.data, size);
+    audio_loader_save(audio_desc, file);
   }
 }
 
-static void build_lua_state(File& pkg_file, const ListSection& section) {
+static void build_lua_state(File& file, const ListSection& section) {
   FREYA_PROFILE_FUNCTION();
 
   // Write the number of assets of this type
 
   u16 asset_count = (u16)section.assets.size(); 
-  file_write_bytes(pkg_file, &asset_count, sizeof(asset_count));
+  file_write_bytes(file, &asset_count, sizeof(asset_count));
   
   // Load and write all of the assets
   
@@ -324,14 +231,15 @@ static void build_lua_state(File& pkg_file, const ListSection& section) {
     // Write the name of the asset
 
     FilePath name = filepath_stem(path);
-    file_write_bytes(pkg_file, name);
+    file_write_bytes(file, name);
 
-    // Load and save the asset
-
-    String src;
-
-    lua_state_loader_load(path, &src);
-    file_write_bytes(pkg_file, src);
+    // Load the asset
+   
+    LuaLoader lua;
+    lua_state_loader_load(lua, path);
+    
+    // Save the asset
+    lua_state_loader_save(lua, file);
   }
 }
 
@@ -1125,12 +1033,11 @@ AssetID asset_group_push_mesh(const AssetGroupID& group_id, const MeshType type)
 
   // Generate the mesh with the same given type
 
-  DynamicArray<Vertex3D> vertices;
-  DynamicArray<u16> indices;
-  mesh_loader_load(type, vertices, indices);
+  MeshLoader loader;
+  mesh_loader_load(loader, type);
 
   // Done!
-  return asset_group_push_mesh(group_id, vertices, indices);
+  return asset_group_push_mesh(group_id, loader.vertices, loader.indices);
 }
 
 AssetID asset_group_push_material(const AssetGroupID& group_id, const MaterialDesc& desc) {

@@ -327,28 +327,45 @@ void gen_torus_mesh(freya::DynamicArray<freya::Vertex3D>& out_vertices,
 /// ----------------------------------------------------------------------
 /// Mesh loader functions
 
-void mesh_loader_load(const freya::MeshType type, 
-                      freya::DynamicArray<freya::Vertex3D>& out_vertices, 
-                      freya::DynamicArray<freya::u16>& out_indices) {
+void mesh_loader_load(MeshLoader& out_loader, const freya::MeshType type) {
   switch(type) {
     case freya::MESH_CUBE:
-      gen_cube_mesh(out_vertices, out_indices);
+      gen_cube_mesh(out_loader.vertices, out_loader.indices);
       break;
     case freya::MESH_PLANE:
-      gen_plane_mesh(out_vertices, out_indices);
+      gen_plane_mesh(out_loader.vertices, out_loader.indices);
       break;
     case freya::MESH_SPHERE:
-      gen_sphere_mesh(out_vertices, out_indices);
+      gen_sphere_mesh(out_loader.vertices, out_loader.indices);
       break;
     case freya::MESH_CYLINDER:
-      gen_cylinder_mesh(out_vertices, out_indices);
+      gen_cylinder_mesh(out_loader.vertices, out_loader.indices);
       break;
     case freya::MESH_TORUS:
-      gen_torus_mesh(out_vertices, out_indices);
+      gen_torus_mesh(out_loader.vertices, out_loader.indices);
       break;
     default:
       break;
   }
+}
+
+void mesh_loader_save(const MeshLoader& loader, freya::File& file) {
+  // Write the vertices 
+
+  freya::u32 vertices_count = (freya::u32)loader.vertices.size();
+
+  freya::file_write_bytes(file, &vertices_count, sizeof(vertices_count));
+  freya::file_write_bytes(file, loader.vertices.data(), sizeof(freya::Vertex3D) * vertices_count);
+
+  // Write the indices 
+
+  freya::u32 indices_count = (freya::u32)loader.indices.size();
+
+  freya::file_write_bytes(file, &indices_count, sizeof(indices_count));
+  freya::file_write_bytes(file, loader.indices.data(), sizeof(freya::u16) * indices_count);
+
+  // Write the material index 
+  freya::file_write_bytes(file, &loader.material_index, sizeof(loader.material_index));
 }
 
 /// Mesh loader functions

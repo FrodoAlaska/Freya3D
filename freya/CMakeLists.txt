@@ -48,6 +48,7 @@ set(FREYA_SOURCES
   ${FREYA_SRC_DIR}/freya_assets/loaders/audio_loader.cpp
   ${FREYA_SRC_DIR}/freya_assets/loaders/lua_state_loader.cpp
   ${FREYA_SRC_DIR}/freya_assets/loaders/mesh_loader.cpp
+  ${FREYA_SRC_DIR}/freya_assets/loaders/model_loader.cpp
  
   # Renderer
   ${FREYA_SRC_DIR}/renderer/camera.cpp
@@ -125,6 +126,9 @@ set(LIBS_SOURCES
 
   # sokol
   ${FREYA_LIBS_DIR}/sokol/sokol.c
+
+  # CGLTF
+  ${FREYA_LIBS_DIR}/cgltf/cgltf.cpp
 )
 ############################################################
 

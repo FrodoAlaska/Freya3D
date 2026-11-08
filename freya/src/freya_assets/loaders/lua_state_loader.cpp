@@ -5,7 +5,7 @@
 /// ----------------------------------------------------------------------
 /// LUA state loader functions
 
-bool lua_state_loader_load(const freya::FilePath& path, freya::String* out_src) {
+bool lua_state_loader_load(LuaLoader& out_loader, const freya::FilePath& path) {
   // Open the LUA file
 
   freya::File file;
@@ -16,13 +16,18 @@ bool lua_state_loader_load(const freya::FilePath& path, freya::String* out_src) 
   
   // Read the string from the file
   
-  freya::file_read_string(file, out_src);
+  freya::file_read_string(file, &out_loader.source);
   freya::file_close(file);
 
   // Done!
   
   FREYA_LOG_TRACE("Successfully loaded LUA file at '\%s\'", path.c_str());
   return true;
+}
+
+void lua_state_loader_save(const LuaLoader& loader, freya::File& file) {
+  // @TODO (Loader/lua): Do more?
+  freya::file_write_bytes(file, loader.source);
 }
 
 /// LUA state loader functions
