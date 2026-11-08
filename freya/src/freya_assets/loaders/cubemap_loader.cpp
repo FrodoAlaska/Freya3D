@@ -86,10 +86,13 @@ bool cubemap_loader_load(CubemapLoader& out_loader, const freya::FilePath& path)
   // Filling the rest of the desc
   //
 
-  out_loader.desc.type         = SG_IMAGETYPE_CUBE;
-  out_loader.desc.pixel_format = SG_PIXELFORMAT_RGBA8;
-  out_loader.desc.width        = width;
-  out_loader.desc.height       = height;
+  out_loader.image_desc.type         = SG_IMAGETYPE_CUBE;
+  out_loader.image_desc.pixel_format = SG_PIXELFORMAT_RGBA8;
+  out_loader.image_desc.width        = width;
+  out_loader.image_desc.height       = height;
+  
+  out_loader.sampler_desc.min_filter      = SG_FILTER_LINEAR;
+  out_loader.sampler_desc.mag_filter      = SG_FILTER_LINEAR;
 
   // Done!
  
@@ -98,29 +101,23 @@ bool cubemap_loader_load(CubemapLoader& out_loader, const freya::FilePath& path)
 }
 
 void cubemap_loader_save(const CubemapLoader& loader, freya::File& file) {
-  // Set up the sampler
-
-  sg_sampler_desc sampler_desc = {};
-  sampler_desc.min_filter      = SG_FILTER_LINEAR;
-  sampler_desc.mag_filter      = SG_FILTER_LINEAR;
-
   // Write the cubemap's size (size per-face)
 
-  freya::u16 width  = (freya::u16)loader.desc.width;
-  freya::u16 height = (freya::u16)loader.desc.height;
+  freya::u16 width  = (freya::u16)loader.image_desc.width;
+  freya::u16 height = (freya::u16)loader.image_desc.height;
 
   freya::file_write_bytes(file, &width, sizeof(width));
   freya::file_write_bytes(file, &height, sizeof(height));
 
   // Write the format
 
-  freya::u8 format = (freya::u8)loader.desc.pixel_format;
+  freya::u8 format = (freya::u8)loader.image_desc.pixel_format;
   freya::file_write_bytes(file, &format, sizeof(format));
 
   // Write the filters 
 
-  freya::u8 min_filter = (freya::u8)sampler_desc.min_filter;
-  freya::u8 mag_filter = (freya::u8)sampler_desc.mag_filter;
+  freya::u8 min_filter = (freya::u8)loader.sampler_desc.min_filter;
+  freya::u8 mag_filter = (freya::u8)loader.sampler_desc.mag_filter;
 
   freya::file_write_bytes(file, &min_filter, sizeof(min_filter));
   freya::file_write_bytes(file, &mag_filter, sizeof(mag_filter));
@@ -132,6 +129,46 @@ void cubemap_loader_save(const CubemapLoader& loader, freya::File& file) {
 
   // Free the data 
   freya::memory_free(loader.data);
+}
+
+void cubemap_loader_read(CubemapLoader& loader, freya::File& file) {
+  // Read the cubemap's size (size per-face)
+
+  freya::u16 width, height;
+  freya::file_read_bytes(file, &width, sizeof(width));  
+  freya::file_read_bytes(file, &height, sizeof(height));  
+
+  loader.image_desc.width  = width;
+  loader.image_desc.height = height;
+
+  loader.image_desc.type = SG_IMAGETYPE_CUBE;
+
+  // Read the format
+
+  freya::u8 format;
+  freya::file_read_bytes(file, &format, sizeof(format));
+
+  loader.image_desc.pixel_format = (sg_pixel_format)format;
+
+  // Read the filters
+
+  freya::u8 min_filter, mag_filter;
+
+  freya::file_read_bytes(file, &min_filter, sizeof(min_filter));
+  freya::file_read_bytes(file, &mag_filter, sizeof(mag_filter));
+
+  loader.sampler_desc.min_filter = (sg_filter)min_filter;
+  loader.sampler_desc.mag_filter = (sg_filter)mag_filter;
+
+  // Read the data
+
+  freya::u32 data_size = freya::CUBEMAP_FACES_MAX * ((width * height) * 4); // 4 = color components
+
+  loader.data = (freya::u8*)freya::memory_allocate(data_size);
+  freya::file_read_bytes(file, loader.data, data_size);
+
+  loader.image_desc.data.mip_levels[0].ptr  = loader.data;
+  loader.image_desc.data.mip_levels[0].size = data_size;
 }
 
 /// Cubemap loader functions

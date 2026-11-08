@@ -47,15 +47,13 @@ bool texture_loader_load(TextureLoader& out_loader, const freya::FilePath& path)
   // Loading the texture 
 
   freya::i32 width, height; 
-  sg_image_desc& img_desc = out_loader.desc;
-
   if(stbi_is_hdr(path.c_str())) {
-    img_desc.pixel_format = SG_PIXELFORMAT_RGBA32F;
-    out_loader.data       = stbi_loadf(path.c_str(), &width, &height, NULL, 4);
+    out_loader.image_desc.pixel_format = SG_PIXELFORMAT_RGBA32F;
+    out_loader.data                    = stbi_loadf(path.c_str(), &width, &height, NULL, 4);
   }
   else {
-    img_desc.pixel_format = SG_PIXELFORMAT_RGBA8;
-    out_loader.data       = stbi_load(path.c_str(), &width, &height, NULL, 4);
+    out_loader.image_desc.pixel_format = SG_PIXELFORMAT_RGBA8;
+    out_loader.data                    = stbi_load(path.c_str(), &width, &height, NULL, 4);
   }
 
   // Fuck!
@@ -69,8 +67,13 @@ bool texture_loader_load(TextureLoader& out_loader, const freya::FilePath& path)
 
   // Filling the rest of the desc
 
-  img_desc.width  = width;
-  img_desc.height = height;
+  out_loader.image_desc.width  = width;
+  out_loader.image_desc.height = height;
+  
+  // Set up the sampler
+
+  out_loader.sampler_desc.min_filter = SG_FILTER_NEAREST;
+  out_loader.sampler_desc.mag_filter = SG_FILTER_NEAREST;
 
   // Done!
  
@@ -78,30 +81,57 @@ bool texture_loader_load(TextureLoader& out_loader, const freya::FilePath& path)
   return true;
 }
 
-void texture_loader_save(const TextureLoader& loader, freya::File& file) {
+bool texture_loader_load(TextureLoader& out_loader, const freya::u8* data, freya::sizei data_size) {
+  FREYA_DEBUG_ASSERT(data, "Invalid data given to texture_loader_load");
+ 
+  // Load the image from memory
+
+  freya::i32 width, height; 
+  out_loader.data = stbi_load_from_memory(data, data_size, &width, &height, NULL, 4);
+
+  // Fuck!
+
+  if(!out_loader.data) {
+    FREYA_LOG_ERROR("Could not load raw texture, %s", stbi_failure_reason());
+    stbi_image_free(out_loader.data);
+
+    return false;
+  }
+
+  // Filling the rest of the desc
+
+  out_loader.image_desc.width  = width;
+  out_loader.image_desc.height = height;
+  
   // Set up the sampler
 
-  sg_sampler_desc sampler_desc = {};
-  sampler_desc.min_filter      = SG_FILTER_NEAREST;
-  sampler_desc.mag_filter      = SG_FILTER_NEAREST;
+  out_loader.sampler_desc.min_filter = SG_FILTER_NEAREST;
+  out_loader.sampler_desc.mag_filter = SG_FILTER_NEAREST;
 
+  // Done!
+ 
+  FREYA_LOG_TRACE("Successfully loaded raw texture");
+  return true;
+}
+
+void texture_loader_save(const TextureLoader& loader, freya::File& file) {
   // Write the texture's size
 
-  freya::u16 width  = (freya::u16)loader.desc.width;
-  freya::u16 height = (freya::u16)loader.desc.height;
+  freya::u16 width  = (freya::u16)loader.image_desc.width;
+  freya::u16 height = (freya::u16)loader.image_desc.height;
 
   freya::file_write_bytes(file, &width, sizeof(width));
   freya::file_write_bytes(file, &height, sizeof(height));
 
   // Write the format
 
-  freya::u8 format = (freya::u8)loader.desc.pixel_format;
+  freya::u8 format = (freya::u8)loader.image_desc.pixel_format;
   freya::file_write_bytes(file, &format, sizeof(format));
 
   // Write the filters 
 
-  freya::u8 min_filter = (freya::u8)sampler_desc.min_filter;
-  freya::u8 mag_filter = (freya::u8)sampler_desc.mag_filter;
+  freya::u8 min_filter = (freya::u8)loader.sampler_desc.min_filter;
+  freya::u8 mag_filter = (freya::u8)loader.sampler_desc.mag_filter;
 
   freya::file_write_bytes(file, &min_filter, sizeof(min_filter));
   freya::file_write_bytes(file, &mag_filter, sizeof(mag_filter));
@@ -115,6 +145,46 @@ void texture_loader_save(const TextureLoader& loader, freya::File& file) {
 
   // Free the data
   freya::memory_free(loader.data); 
+}
+
+void texture_loader_read(TextureLoader& loader, freya::File& file) {
+  // Read the texture's size
+
+  freya::u16 width, height;
+  
+  freya::file_read_bytes(file, &width, sizeof(width));  
+  freya::file_read_bytes(file, &height, sizeof(height));  
+
+  loader.image_desc.width  = width;
+  loader.image_desc.height = height;
+
+  // Read the format
+
+  freya::u8 format;
+  freya::file_read_bytes(file, &format, sizeof(format));
+
+  loader.image_desc.pixel_format = (sg_pixel_format)format;
+
+  // Read the filters
+
+  freya::u8 min_filter, mag_filter;
+
+  freya::file_read_bytes(file, &min_filter, sizeof(min_filter));
+  freya::file_read_bytes(file, &mag_filter, sizeof(mag_filter));
+
+  loader.sampler_desc.min_filter = (sg_filter)min_filter;
+  loader.sampler_desc.mag_filter = (sg_filter)mag_filter;
+
+  // Read the data
+
+  freya::u32 pixel_size = (format == SG_PIXELFORMAT_RGBA32F) ? 4 : 1; 
+  freya::u32 data_size  = (width * height) * 4 * pixel_size; // 4 = color components
+
+  loader.data = freya::memory_allocate(data_size);
+  freya::file_read_bytes(file, loader.data, data_size);
+
+  loader.image_desc.data.mip_levels[0].ptr  = loader.data;
+  loader.image_desc.data.mip_levels[0].size = data_size;
 }
 
 /// Texture loader functions

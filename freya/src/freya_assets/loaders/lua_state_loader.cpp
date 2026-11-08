@@ -30,5 +30,10 @@ void lua_state_loader_save(const LuaLoader& loader, freya::File& file) {
   freya::file_write_bytes(file, loader.source);
 }
 
+void lua_state_loader_read(LuaLoader& loader, freya::File& file) {
+  // @TODO (Loader/lua): Do more?
+  freya::file_read_bytes(file, &loader.source);
+}
+
 /// LUA state loader functions
 /// ----------------------------------------------------------------------

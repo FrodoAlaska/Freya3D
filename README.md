@@ -2,24 +2,32 @@
 
 A 3D game engine inspired by the games of the early 2000s. What does that mean? I don't know. Leave me alone.
 
-### Dependencies:
+## Dependencies:
 
-- [GLFW](https://github.com/glfw/glfw)
-- [GLM](https://github.com/g-truc/glm)
+### Assets
+
+- [stb](https://github.com/nothings/stb)
+- [cgltf](https://github.com/jkuhlmann/cgltf)
+- [dr_libs](https://github.com/mackron/dr_libs)
+- [LUA (CMake-based)](https://github.com/walterschell/Lua.git)
+- [FileWatch](https://github.com/ThomasMonkman/filewatch)
+
+### Graphics
+
 - [sokol (-gfx, -gl, -fontstash, shape)](https://github.com/floooh/sokol)
 - [sokol-gp](https://github.com/edubart/sokol_gp)
 - [fontstash](https://github.com/memononen/fontstash)
 - [ImGui](https://github.com/ocornut/imgui)
+
+### Other
+
+- [GLFW](https://github.com/glfw/glfw)
+- [GLM](https://github.com/g-truc/glm)
 - [OpenAL-Soft](https://github.com/kcat/openal-soft)
 - [EnTT](https://github.com/skypjack/entt)
-- [stb](https://github.com/nothings/stb)
-- [cgltf](https://github.com/jkuhlmann/cgltf)
-- [dr_libs](https://github.com/mackron/dr_libs)
 - [Tracy](https://github.com/wolfpld/tracy)
 - [moodycamel](https://github.com/cameron314/concurrentqueue)
 - [FastNoiseLite](https://github.com/Auburn/FastNoiseLite)
-- [LUA (CMake-based)](https://github.com/walterschell/Lua.git)
-- [FileWatch](https://github.com/ThomasMonkman/filewatch)
 
 ## Build Instructions
 

@@ -37,5 +37,13 @@ void font_loader_save(const FontLoader& loader, freya::File& file) {
   freya::file_write_bytes(file, loader.bytes.data(), loader.bytes.size());
 }
 
+void font_loader_read(FontLoader& loader, freya::File& file) {
+  freya::u32 data_size;
+  freya::file_read_bytes(file, &data_size, sizeof(data_size));
+
+  loader.bytes.resize(data_size);
+  freya::file_read_bytes(file, loader.bytes.data(), data_size);
+}
+
 /// Font loader functions
 /// ----------------------------------------------------------------------

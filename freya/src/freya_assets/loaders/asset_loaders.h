@@ -5,8 +5,10 @@
 /// ----------------------------------------------------------------------
 /// TextureLoader
 struct TextureLoader {
-  sg_image_desc desc; 
-  void* data;
+  sg_image_desc image_desc     = {}; 
+  sg_sampler_desc sampler_desc = {};
+
+  void* data = nullptr;
 };
 /// TextureLoader
 /// ----------------------------------------------------------------------
@@ -14,8 +16,10 @@ struct TextureLoader {
 /// ----------------------------------------------------------------------
 /// CubemapLoader
 struct CubemapLoader {
-  sg_image_desc desc;
-  freya::u8* data;
+  sg_image_desc image_desc     = {};
+  sg_sampler_desc sampler_desc = {};
+
+  freya::u8* data = nullptr;
 };
 /// CubemapLoader
 /// ----------------------------------------------------------------------
@@ -80,7 +84,11 @@ struct LuaLoader {
 
 bool texture_loader_load(TextureLoader& out_loader, const freya::FilePath& path);
 
+bool texture_loader_load(TextureLoader& out_loader, const freya::u8* data, freya::sizei data_size);
+
 void texture_loader_save(const TextureLoader& loader, freya::File& file);
+
+void texture_loader_read(TextureLoader& loader, freya::File& file);
 
 /// Texture loader functions
 /// ----------------------------------------------------------------------
@@ -91,6 +99,8 @@ void texture_loader_save(const TextureLoader& loader, freya::File& file);
 bool cubemap_loader_load(CubemapLoader& out_loader, const freya::FilePath& path);
 
 void cubemap_loader_save(const CubemapLoader& loader, freya::File& file);
+
+void cubemap_loader_read(CubemapLoader& loader, freya::File& file);
 
 /// Cubemap loader functions
 /// ----------------------------------------------------------------------
@@ -112,6 +122,8 @@ bool model_loader_load(ModelLoader& out_loader, const freya::FilePath& path);
 
 void model_loader_save(const ModelLoader& loader, freya::File& file);
 
+void model_loader_read(ModelLoader& loader, freya::File& file);
+
 /// Model loader functions
 /// ----------------------------------------------------------------------
 
@@ -121,6 +133,8 @@ void model_loader_save(const ModelLoader& loader, freya::File& file);
 bool font_loader_load(FontLoader& out_loader, const freya::FilePath& path);
 
 void font_loader_save(const FontLoader& loader, freya::File& file);
+
+void font_loader_read(FontLoader& loader, freya::File& file);
 
 /// Font loader functions
 /// ----------------------------------------------------------------------
@@ -132,7 +146,7 @@ bool audio_loader_load(freya::AudioBufferDesc& out_desc, const freya::FilePath& 
 
 void audio_loader_save(const freya::AudioBufferDesc& audio_desc, freya::File& file);
 
-void audio_loader_unload(freya::AudioBufferDesc& audio_desc);
+void audio_loader_read(freya::AudioBufferDesc& audio_desc, freya::File& file);
 
 /// Audio loader functions
 /// ----------------------------------------------------------------------
@@ -143,6 +157,8 @@ void audio_loader_unload(freya::AudioBufferDesc& audio_desc);
 bool lua_state_loader_load(LuaLoader& out_loader, const freya::FilePath& path);
 
 void lua_state_loader_save(const LuaLoader& loader, freya::File& file);
+
+void lua_state_loader_read(LuaLoader& loader, freya::File& file);
 
 /// LUA state loader functions
 /// ----------------------------------------------------------------------

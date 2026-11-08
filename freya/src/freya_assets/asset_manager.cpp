@@ -259,56 +259,17 @@ static void read_textures(File& file, AssetGroup& group) {
     String name;
     file_read_bytes(file, &name);
 
-    //
-    // Read the texture desc
-    //
+    // Read the loader 
 
-    sg_image_desc image_desc     = {};
-    sg_sampler_desc sampler_desc = {};
-
-    // Read the texture's size
-
-    u16 width, height;
-    file_read_bytes(file, &width, sizeof(width));  
-    file_read_bytes(file, &height, sizeof(height));  
-
-    image_desc.width  = width;
-    image_desc.height = height;
-
-    // Read the format
-
-    u8 format;
-    file_read_bytes(file, &format, sizeof(format));
-
-    image_desc.pixel_format = (sg_pixel_format)format;
-
-    // Read the filters
-
-    u8 min_filter, mag_filter;
-
-    file_read_bytes(file, &min_filter, sizeof(min_filter));
-    file_read_bytes(file, &mag_filter, sizeof(mag_filter));
-
-    sampler_desc.min_filter = (sg_filter)min_filter;
-    sampler_desc.mag_filter = (sg_filter)mag_filter;
-
-    // Read the data
-
-    u32 pixel_size = (format == SG_PIXELFORMAT_RGBA32F) ? 4 : 1; 
-    u32 data_size  = (width * height) * 4 * pixel_size; // 4 = color components
-
-    void* pixels = memory_allocate(data_size);
-    file_read_bytes(file, pixels, data_size);
-    
-    image_desc.data.mip_levels[0].ptr  = pixels;
-    image_desc.data.mip_levels[0].size = data_size;
+    TextureLoader texture; 
+    texture_loader_read(texture, file);
 
     // Add the texture to the group
-    group.named_ids[name] = asset_group_push_texture(group.id, image_desc, sampler_desc); 
+    group.named_ids[name] = asset_group_push_texture(group.id, texture.image_desc, texture.sampler_desc); 
     
     // Done!
     
-    memory_free(pixels);
+    memory_free(texture.data);
     FREYA_LOG_DEBUG("Loaded texture \'%s\' from frpkg ", name.c_str());
   }
 }
@@ -329,57 +290,17 @@ static void read_cubemaps(File& file, AssetGroup& group) {
     String name;
     file_read_bytes(file, &name);
 
-    //
-    // Read the cubemap desc
-    //
+    // Read the cubemap
 
-    sg_image_desc image_desc     = {};
-    sg_sampler_desc sampler_desc = {};
-
-    // Read the cubemap's size (size per-face)
-
-    u16 width, height;
-    file_read_bytes(file, &width, sizeof(width));  
-    file_read_bytes(file, &height, sizeof(height));  
-
-    image_desc.width  = width;
-    image_desc.height = height;
-
-    image_desc.type = SG_IMAGETYPE_CUBE;
-
-    // Read the format
-
-    u8 format;
-    file_read_bytes(file, &format, sizeof(format));
-
-    image_desc.pixel_format = (sg_pixel_format)format;
-
-    // Read the filters
-
-    u8 min_filter, mag_filter;
-
-    file_read_bytes(file, &min_filter, sizeof(min_filter));
-    file_read_bytes(file, &mag_filter, sizeof(mag_filter));
-
-    sampler_desc.min_filter = (sg_filter)min_filter;
-    sampler_desc.mag_filter = (sg_filter)mag_filter;
-
-    // Read the data
-    
-    u32 data_size = CUBEMAP_FACES_MAX * ((width * height) * 4); // 4 = color components
-
-    void* pixels = memory_allocate(data_size);
-    file_read_bytes(file, pixels, data_size);
-    
-    image_desc.data.mip_levels[0].ptr  = pixels;
-    image_desc.data.mip_levels[0].size = data_size;
+    CubemapLoader cubemap;
+    cubemap_loader_read(cubemap, file);
 
     // Add the cubemap to the group
-    group.named_ids[name] = asset_group_push_cubemap(group.id, image_desc, sampler_desc); 
+    group.named_ids[name] = asset_group_push_cubemap(group.id, cubemap.image_desc, cubemap.sampler_desc); 
     
     // Done!
     
-    memory_free(pixels);
+    memory_free(cubemap.data);
     FREYA_LOG_DEBUG("Loaded cubemap \'%s\' from frpkg ", name.c_str());
   }
 }
@@ -400,17 +321,35 @@ static void read_models(File& file, AssetGroup& group) {
     String name;
     file_read_bytes(file, &name);
 
-    // Making new buffers for the meshes and the materials
+    // Read the model
+
+    ModelLoader model; 
+    model_loader_read(model, file);
+
+    // Make buffers for all the internal assets
 
     DynamicArray<AssetID> meshes; 
-    DynamicArray<AssetID> materials; 
-    // @TODO (Asset/models)
+    DynamicArray<AssetID> materials;
+    DynamicArray<i8> remaps;
+
+    // Push the new models
+
+    for(auto& mesh : model.meshes) {
+      meshes.emplace_back(asset_group_push_mesh(group.id, mesh.vertices, mesh.indices));
+      remaps.emplace_back(mesh.material_index);
+    }
+
+    // Push the new materials 
+    // @TODO
 
     // Add the cubemap to the group
-    group.named_ids[name] = asset_group_push_model(group.id, meshes, materials); 
-    
+    group.named_ids[name] = asset_group_push_model(group.id, meshes, materials, remaps); 
+     
+    // Destroy the model 
+    // @TODO
+
     // Done!
-    FREYA_LOG_DEBUG("Loaded cubemap \'%s\' from frpkg ", name.c_str());
+    FREYA_LOG_DEBUG("Loaded model \'%s\' from frpkg ", name.c_str());
   }
 }
 
@@ -431,17 +370,12 @@ static void read_fonts(File& file, AssetGroup& group) {
     file_read_bytes(file, &name);
 
     // Read the font data
-   
-    u32 data_size;
-    file_read_bytes(file, &data_size, sizeof(data_size));
-
-    DynamicArray<u8> font_data;
-    font_data.resize(data_size);
     
-    file_read_bytes(file, font_data.data(), data_size);
+    FontLoader font; 
+    font_loader_read(font, file);
 
     // Add the font to the group
-    group.named_ids[name] = asset_group_push_font(group.id, font_data, name); 
+    group.named_ids[name] = asset_group_push_font(group.id, font.bytes, name); 
 
     FREYA_LOG_DEBUG("Loaded font \'%s\' from frpkg ", name.c_str());
   }
@@ -463,39 +397,11 @@ static void read_audio_buffers(File& file, AssetGroup& group) {
     String name;
     file_read_bytes(file, &name);
     
-    //
     // Read the audio desc
-    //
 
     AudioBufferDesc desc;
-  
-    // Read the format
- 
-    u8 format;
-    file_read_bytes(file, &format, sizeof(format));
-
-    desc.format = (AudioBufferFormat)format;
-
-    // Read the channels
-
-    u8 channels;
-    file_read_bytes(file, &channels, sizeof(channels));
-
-    desc.channels = (u32)channels;
-
-    // Read the sample rate
-    file_read_bytes(file, &desc.sample_rate, sizeof(desc.sample_rate));
-
-    // Read the samples
-
-    u32 size;
-    file_read_bytes(file, &size, sizeof(size));
-
-    desc.size = (sizei)size;
-    desc.data = memory_allocate(desc.size);
-
-    file_read_bytes(file, desc.data, desc.size);
-
+    audio_loader_read(desc, file);
+     
     // Add the audio buffer to the group
     group.named_ids[name] = asset_group_push_audio_buffer(group.id, desc); 
 
@@ -525,11 +431,11 @@ static void read_lua_state(File& file, AssetGroup& group) {
 
     // Read the LUA file
 
-    String src;
-    file_read_bytes(file, &src);
+    LuaLoader lua;
+    lua_state_loader_read(lua, file);
 
     // Add the LUA state to the group
-    group.named_ids[name] = asset_group_push_lua_state(group.id, src); 
+    group.named_ids[name] = asset_group_push_lua_state(group.id, lua.source); 
 
     FREYA_LOG_DEBUG("Loaded LUA state \'%s\' from frpkg ", name.c_str());
   }
@@ -1101,7 +1007,8 @@ AssetID asset_group_push_material(const AssetGroupID& group_id, const MaterialDe
 
 AssetID asset_group_push_model(const AssetGroupID& group_id, 
                                const DynamicArray<AssetID>& meshes, 
-                               const DynamicArray<AssetID>& materials) {
+                               const DynamicArray<AssetID>& materials,
+                               const DynamicArray<i8>& material_remaps) {
   GROUP_CHECK(group_id);
   AssetGroup& group = s_manager.groups[group_id.get_id()];
  
@@ -1114,6 +1021,9 @@ AssetID asset_group_push_model(const AssetGroupID& group_id,
   for(auto& mesh : meshes) {
     model->meshes.emplace_back(asset_group_get_mesh(mesh));
   }
+
+  // Copy all of the remaps 
+  model->material_remaps.insert(model->material_remaps.end(), material_remaps.begin(), material_remaps.end());
 
   // Push all of the materials 
   

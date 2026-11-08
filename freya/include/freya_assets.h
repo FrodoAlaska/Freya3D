@@ -316,11 +316,16 @@ FREYA_API AssetID asset_group_push_mesh(const AssetGroupID& group_id, const Mesh
 /// returning a valid `AssetID` to be used later.
 FREYA_API AssetID asset_group_push_material(const AssetGroupID& group_id, const MaterialDesc& desc);
 
-/// Push a new `Model` into `group_id`, giving it the `meshes` and `materials`,
+/// Push a new `Model` into `group_id`, giving it the `meshes`, `materials`, and `material_remaps`,
 /// returning a valid `AssetID` to be used later.
+///
+/// @NOTE: The `material_remaps` array is used when rendering the retrieve the index 
+/// of the material to use when rendering a specific mesh. The `material_remaps` array 
+/// will most likely be the same size as the given `meshes` array.
 FREYA_API AssetID asset_group_push_model(const AssetGroupID& group_id, 
                                          const DynamicArray<AssetID>& meshes, 
-                                         const DynamicArray<AssetID>& materials);
+                                         const DynamicArray<AssetID>& materials,
+                                         const DynamicArray<i8>& material_remaps);
 
 /// Push a new `Font` into `group_id`, using `font_data` and `name` (name of the font),
 /// returning a valid `AssetID` to be used later.

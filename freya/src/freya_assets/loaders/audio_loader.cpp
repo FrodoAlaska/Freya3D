@@ -141,12 +141,33 @@ void audio_loader_save(const freya::AudioBufferDesc& audio_desc, freya::File& fi
   freya::file_write_bytes(file, audio_desc.data, size);
 }
 
-void audio_loader_unload(freya::AudioBufferDesc& audio_desc) {
-  if(!audio_desc.data) {
-    return;
-  }
+void audio_loader_read(freya::AudioBufferDesc& audio_desc, freya::File& file) {
+  // Read the format
 
-  freya::memory_free(audio_desc.data);
+  freya::u8 format;
+  freya::file_read_bytes(file, &format, sizeof(format));
+
+  audio_desc.format = (freya::AudioBufferFormat)format;
+
+  // Read the channels
+
+  freya::u8 channels;
+  freya::file_read_bytes(file, &channels, sizeof(channels));
+
+  audio_desc.channels = (freya::u32)channels;
+
+  // Read the sample rate
+  freya::file_read_bytes(file, &audio_desc.sample_rate, sizeof(audio_desc.sample_rate));
+
+  // Read the samples
+
+  freya::u32 size;
+  freya::file_read_bytes(file, &size, sizeof(size));
+
+  audio_desc.size = (freya::sizei)size;
+  audio_desc.data = freya::memory_allocate(audio_desc.size);
+
+  freya::file_read_bytes(file, audio_desc.data, audio_desc.size);
 }
 
 /// Audio loader functions

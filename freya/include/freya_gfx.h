@@ -112,13 +112,6 @@ struct Mesh {
   
   /// The number of elements to render in this mesh
   u32 elements_count = 0;
-
-  /// The index of the material to be used 
-  /// with this mesh. 
-  ///
-  /// @NOTE: This is `0` by default, representing 
-  /// the default material.
-  u32 material_index = 0;
 };
 /// Mesh 
 ///---------------------------------------------------------------------------------------------------------------------
@@ -173,6 +166,10 @@ struct Material {
 struct Model {
   /// All of the raw meshes of the model.
   DynamicArray<Mesh> meshes;
+
+  /// An array of indices that remaps the mesh 
+  /// to a material in their respective arrays. 
+  DynamicArray<i8> material_remaps;
   
   /// All of the materials of the model.
   DynamicArray<Material> materials;
