@@ -53,3 +53,11 @@ void mesh_loader_load(const freya::MeshType type,
 
 /// Mesh loader functions
 /// ----------------------------------------------------------------------
+
+/// ----------------------------------------------------------------------
+/// Model loader functions
+
+// void model_loader_load(const freya::FilePath& path);
+
+/// Model loader functions
+/// ----------------------------------------------------------------------

@@ -17,6 +17,7 @@ struct Cubemap;
 struct Mesh;
 struct MaterialDesc;
 struct Material;
+struct Model;
 struct Font;
 
 /// Forward declarations
@@ -26,7 +27,7 @@ struct Font;
 /// Assets consts
 
 /// The currently valid version of any `.frpkg` file
-const u8 FRPKG_VALID_VERSION  = 6;
+const u8 FRPKG_VALID_VERSION  = 7;
 
 /// A value to indicate an invalid asset group.
 const i32 ASSET_GROUP_INVALID = -1;
@@ -51,6 +52,7 @@ enum AssetType {
   ASSET_TYPE_SHADER,
   ASSET_TYPE_MESH,
   ASSET_TYPE_MATERIAL,
+  ASSET_TYPE_MODEL,
   ASSET_TYPE_AUDIO_BUFFER,
   ASSET_TYPE_FONT,
   ASSET_TYPE_LUA,
@@ -198,6 +200,7 @@ struct AssetGroup {
   DynamicArray<sg_shader> shaders;
   DynamicArray<Mesh> meshes;
   DynamicArray<Material> materials;
+  DynamicArray<Model*> models;
   DynamicArray<AudioBufferID> audio_buffers;
   
   DynamicArray<Font*> fonts;
@@ -313,6 +316,12 @@ FREYA_API AssetID asset_group_push_mesh(const AssetGroupID& group_id, const Mesh
 /// returning a valid `AssetID` to be used later.
 FREYA_API AssetID asset_group_push_material(const AssetGroupID& group_id, const MaterialDesc& desc);
 
+/// Push a new `Model` into `group_id`, giving it the `meshes` and `materials`,
+/// returning a valid `AssetID` to be used later.
+FREYA_API AssetID asset_group_push_model(const AssetGroupID& group_id, 
+                                         const DynamicArray<AssetID>& meshes, 
+                                         const DynamicArray<AssetID>& materials);
+
 /// Push a new `Font` into `group_id`, using `font_data` and `name` (name of the font),
 /// returning a valid `AssetID` to be used later.
 FREYA_API AssetID asset_group_push_font(const AssetGroupID& group_id, const DynamicArray<u8>& font_data, const String& name);
@@ -383,6 +392,14 @@ FREYA_API Mesh& asset_group_get_mesh(const AssetID& id);
 ///   2 - the internal group ID is invalid,
 ///   3 - or the internal type does not match this asset.
 FREYA_API Material& asset_group_get_material(const AssetID& id);
+
+/// Retrieve a `Model`, using `id`.
+///
+/// @NOTE: This function will assert if the given `id` is either: 
+///   1 - is invalid and was never created before, 
+///   2 - the internal group ID is invalid,
+///   3 - or the internal type does not match this asset.
+FREYA_API Model* asset_group_get_model(const AssetID& id);
 
 /// Retrieve a `Font`, using `id`.
 ///

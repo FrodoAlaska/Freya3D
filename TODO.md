@@ -1,9 +1,18 @@
 # TODO 
 
+## Features We Definitely Need
+
+- Decals 
+- Shadows 
+- Particles (CPU, but GPU-based is going to be better) 
+- Frustrum culling 
+- Global illumination
+
 ## Immediate 
 
 - Renderer 
     - There's a weird black dot that appears for some fucking reason. Fix it!
+    - Shadows?
 
 - 3D Models (loading and rendering)
     - Load from a GLTF file 
@@ -14,6 +23,9 @@
 
 - Physics 
     - Either Box3D or Jolt... I'm not sure yet...
+
+- Animations
+    - I don't know yet...
 
 ## Issues To Fix 
 
@@ -26,6 +38,7 @@
 
 - Renderer
     - Normal maps
+    - IBL (Image-Based Lighting)
     - HDR colors, exposure, and gamma correction. The colors in general are fucked. We need some tone-mapping, maybe?
     - We should think about the vertex situation. Should we have one unifying vertex type or multiple???
     - Implement acceleration spatial structures to improve the renderer's performance

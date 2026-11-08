@@ -4,6 +4,7 @@
 #include "freya_render.h"
 #include "freya_input.h"
 #include "freya_math.h"
+#include "freya_gui.h"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -46,22 +47,27 @@ void entity_world_update(EntityWorld& world, const f32 delta_time) {
   {
     FREYA_PROFILE_FUNCTION_NAMED("entity_world_update(CameraController)");
 
-    auto view = world.view<CameraController, Camera>();
-    for(auto entt : view) {
-      // Retrieve all the required components
+    // Do not update the controllers when the GUI is active
+    // @TODO (Camera): This is obviously terrible
 
-      CameraController& controller = view.get<CameraController>(entt);
-      Camera& camera               = view.get<Camera>(entt);
+    if(!gui_is_active()) {
+      auto view = world.view<CameraController, Camera>();
+      for(auto entt : view) {
+        // Retrieve all the required components
 
-      // Move the controller according to its type 
+        CameraController& controller = view.get<CameraController>(entt);
+        Camera& camera               = view.get<Camera>(entt);
 
-      switch(controller.type) {
-        case CAMERA_CONTROLLER_FREE:
-          camera_controller_free(controller, camera, delta_time);
-          break;
-        case CAMERA_CONTROLLER_FPS:
-          camera_controller_fps(controller, camera, delta_time);
-          break;
+        // Move the controller according to its type 
+
+        switch(controller.type) {
+          case CAMERA_CONTROLLER_FREE:
+            camera_controller_free(controller, camera, delta_time);
+            break;
+          case CAMERA_CONTROLLER_FPS:
+            camera_controller_fps(controller, camera, delta_time);
+            break;
+        }
       }
     }
   }

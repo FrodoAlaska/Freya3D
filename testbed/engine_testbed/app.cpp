@@ -71,7 +71,10 @@ bool app_init(const freya::Args& args, freya::Window* window) {
                                       0.1f);
 
   freya::entity_add_directional_light(s_app.world, s_app.camera_entt, freya::Vec3(0.0f));
-  freya::entity_add_skybox(s_app.world, s_app.camera_entt, freya::asset_group_get_id(s_app.group_id, "corona"));
+  freya::entity_add_skybox(s_app.world, 
+                           s_app.camera_entt, 
+                           freya::asset_group_get_id(s_app.group_id, "corona"), 
+                           freya::Vec3(0.025f));
 
   // Mesh 1 init
 
@@ -83,13 +86,13 @@ bool app_init(const freya::Args& args, freya::Window* window) {
   // Point light init
   
   freya::EntityID point_light = freya::entity_create(s_app.world, freya::Vec3(10.0f, 0.0f, 10.0f)); 
-  
+
   freya::entity_add_tag(s_app.world, point_light, "Point Light");
   freya::entity_add_point_light(s_app.world, point_light);
 
   // Plane init
 
-  mesh_id = freya::asset_group_push_mesh(s_app.group_id, freya::MESH_CUBE);
+  mesh_id = freya::asset_group_push_mesh(s_app.group_id, freya::MESH_PLANE);
   
   mat_desc = {
     .name = "plane_material", 

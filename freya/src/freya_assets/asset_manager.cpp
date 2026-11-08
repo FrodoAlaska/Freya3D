@@ -213,6 +213,26 @@ static void build_cubemaps(File& file, const ListSection& section) {
   }
 }
 
+static void build_models(File& file, const ListSection& section) {
+  FREYA_PROFILE_FUNCTION();
+
+  // Write the number of assets of this type
+
+  u16 asset_count = (u16)section.assets.size(); 
+  file_write_bytes(file, &asset_count, sizeof(asset_count));
+
+  // Load and write all of the assets
+
+  for(const auto& path : section.assets) {
+    // Write the name of the asset
+
+    FilePath name = filepath_stem(path);
+    file_write_bytes(file, name);
+
+    // @TODO (Asset/models)
+  }
+}
+
 static void build_fonts(File& pkg_file, const ListSection& section) {
   FREYA_PROFILE_FUNCTION();
 
@@ -456,6 +476,36 @@ static void read_cubemaps(File& file, AssetGroup& group) {
   }
 }
 
+static void read_models(File& file, AssetGroup& group) {
+  FREYA_PROFILE_FUNCTION();
+  
+  // Read the count
+
+  u16 count;
+  file_read_bytes(file, &count, sizeof(count));
+
+  // Read the asset
+
+  for(u16 i = 0; i < count; i++) {
+    // Read the name
+
+    String name;
+    file_read_bytes(file, &name);
+
+    // Making new buffers for the meshes and the materials
+
+    DynamicArray<AssetID> meshes; 
+    DynamicArray<AssetID> materials; 
+    // @TODO (Asset/models)
+
+    // Add the cubemap to the group
+    group.named_ids[name] = asset_group_push_model(group.id, meshes, materials); 
+    
+    // Done!
+    FREYA_LOG_DEBUG("Loaded cubemap \'%s\' from frpkg ", name.c_str());
+  }
+}
+
 static void read_fonts(File& file, AssetGroup& group) {
   FREYA_PROFILE_FUNCTION();
   
@@ -623,6 +673,9 @@ static bool build_package(const FilePath& list_path, const FilePath& output_path
       case ASSET_TYPE_CUBEMAP:
         build_cubemaps(pkg_file, section);
         break;
+      case ASSET_TYPE_MODEL:
+        build_models(pkg_file, section);
+        break;
       case ASSET_TYPE_FONT:
         build_fonts(pkg_file, section);
         break;
@@ -711,6 +764,11 @@ void asset_group_clear(const AssetGroupID& group_id) {
     delete asset;
   }
   group.fonts.clear();
+
+  for(auto& asset : group.models) {
+    delete asset;
+  }
+  group.models.clear();
 
   //
   // Destroy GFX assets
@@ -1134,6 +1192,43 @@ AssetID asset_group_push_material(const AssetGroupID& group_id, const MaterialDe
   return id;
 }
 
+AssetID asset_group_push_model(const AssetGroupID& group_id, 
+                               const DynamicArray<AssetID>& meshes, 
+                               const DynamicArray<AssetID>& materials) {
+  GROUP_CHECK(group_id);
+  AssetGroup& group = s_manager.groups[group_id.get_id()];
+ 
+  // Allocate the model 
+  Model* model = new Model{};
+
+  // Push all of the meshes
+  // @TODO (Assets/model): Copying the meshes... is that a good idea??
+
+  for(auto& mesh : meshes) {
+    model->meshes.emplace_back(asset_group_get_mesh(mesh));
+  }
+
+  // Push all of the materials 
+  
+  for(auto& mat : materials) {
+    model->materials.emplace_back(asset_group_get_material(mat));
+  }
+
+  // New model ID
+
+  AssetID id; 
+  PUSH_ASSET(group, models, model, ASSET_TYPE_MODEL, id);
+  
+  // Some useful debug info
+  
+  FREYA_LOG_DEBUG("Group \'%s\' pushed model:", group.name.c_str());
+  FREYA_LOG_DEBUG("     Meshes    = \'%zu\'", model->meshes.size());
+  FREYA_LOG_DEBUG("     Materials = \'%zu\'", model->materials.size());
+
+  // Done!
+  return id;
+}
+
 AssetID asset_group_push_font(const AssetGroupID& group_id, const DynamicArray<u8>& font_data, const String& name) {
   GROUP_CHECK(group_id);
   AssetGroup& group = s_manager.groups[group_id.get_id()];
@@ -1289,6 +1384,9 @@ bool asset_group_load_package(const AssetGroupID& group_id, const FilePath& frpk
       case ASSET_TYPE_CUBEMAP:
         read_cubemaps(file, group);
         break;
+      case ASSET_TYPE_MODEL:
+        read_models(file, group);
+        break;
       case ASSET_TYPE_FONT:
         read_fonts(file, group);
         break;
@@ -1360,6 +1458,11 @@ Mesh& asset_group_get_mesh(const AssetID& id) {
 Material& asset_group_get_material(const AssetID& id) {
   AssetGroup& group = s_manager.groups[id.get_group_id()];
   return get_asset(id, group.materials, ASSET_TYPE_MATERIAL);
+}
+
+Model* asset_group_get_model(const AssetID& id) {
+  AssetGroup& group = s_manager.groups[id.get_group_id()];
+  return get_asset(id, group.models, ASSET_TYPE_MODEL);
 }
 
 Font* asset_group_get_font(const AssetID& id) {

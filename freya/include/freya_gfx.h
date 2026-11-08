@@ -105,11 +105,20 @@ struct Cubemap {
 ///---------------------------------------------------------------------------------------------------------------------
 /// Mesh 
 struct Mesh {
+  /// The required buffers for rendering
+
   sg_buffer vertex_buffer;
   sg_buffer index_buffer;
-
-  u32 material_index = 0;
+  
+  /// The number of elements to render in this mesh
   u32 elements_count = 0;
+
+  /// The index of the material to be used 
+  /// with this mesh. 
+  ///
+  /// @NOTE: This is `0` by default, representing 
+  /// the default material.
+  u32 material_index = 0;
 };
 /// Mesh 
 ///---------------------------------------------------------------------------------------------------------------------
@@ -137,12 +146,17 @@ struct MaterialDesc {
 ///---------------------------------------------------------------------------------------------------------------------
 /// Material 
 struct Material {
+  /// The name of the material to show for debug purposes
   String name = "default";
+
+  /// The texture maps
 
   Texture albedo_map;
   Texture roughness_map; 
   Texture metallic_map; 
   Texture normal_map;
+
+  /// The misc. variables the material controls
 
   Vec4 color;
 
@@ -152,6 +166,18 @@ struct Material {
   bool shadows_enabled;
 };
 /// Material 
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
+/// Model
+struct Model {
+  /// All of the raw meshes of the model.
+  DynamicArray<Mesh> meshes;
+  
+  /// All of the materials of the model.
+  DynamicArray<Material> materials;
+};
+/// Model
 ///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------

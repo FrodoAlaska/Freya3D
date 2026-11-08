@@ -108,6 +108,7 @@ bool list_context_load(ListContext& out_list, const freya::FilePath& path) {
 
   assign_section_paths(out_list, "textures", freya::ASSET_TYPE_TEXTURE);
   assign_section_paths(out_list, "cubemaps", freya::ASSET_TYPE_CUBEMAP);
+  assign_section_paths(out_list, "models", freya::ASSET_TYPE_MODEL);
   assign_section_paths(out_list, "fonts", freya::ASSET_TYPE_FONT);
   assign_section_paths(out_list, "audio", freya::ASSET_TYPE_AUDIO_BUFFER);
   assign_section_paths(out_list, "lua", freya::ASSET_TYPE_LUA);
