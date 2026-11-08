@@ -326,27 +326,55 @@ static void read_models(File& file, AssetGroup& group) {
     ModelLoader model; 
     model_loader_read(model, file);
 
-    // Make buffers for all the internal assets
-
+    // Push the new models
+    
     DynamicArray<AssetID> meshes; 
-    DynamicArray<AssetID> materials;
     DynamicArray<i8> remaps;
 
-    // Push the new models
+    meshes.reserve(model.meshes.size()); 
+    remaps.reserve(model.meshes.size()); 
 
     for(auto& mesh : model.meshes) {
       meshes.emplace_back(asset_group_push_mesh(group.id, mesh.vertices, mesh.indices));
       remaps.emplace_back(mesh.material_index);
     }
 
-    // Push the new materials 
-    // @TODO
+    // Push the textures
+
+    DynamicArray<AssetID> textures; 
+    textures.reserve(model.textures.size());
+
+    for(auto& texture : model.textures) {
+      textures.emplace_back(asset_group_push_texture(group.id, texture.image_desc, texture.sampler_desc));
+      memory_free(texture.data);
+    }
+
+    // Push the new materials
+
+    DynamicArray<AssetID> materials; 
+    materials.reserve(model.materials.size());
+
+    for(auto& mat : model.materials) {
+      MaterialDesc desc = {
+        .name = mat.name,
+         
+        .albedo_id    = mat.albedo_index    == -1 ? AssetID{} : textures[mat.albedo_index],
+        .roughness_id = mat.roughness_index == -1 ? AssetID{} : textures[mat.roughness_index],
+        .metallic_id  = mat.metallic_index  == -1 ? AssetID{} : textures[mat.metallic_index],
+        .normal_id    = mat.normal_index    == -1 ? AssetID{} : textures[mat.normal_index],
+
+        .color = Vec4(mat.color.r, mat.color.g, mat.color.b, 1.0f),
+
+        .roughness = mat.roughness, 
+        .metallic  = mat.metallic, 
+
+        .shadows_enabled = true,
+      };
+      materials.emplace_back(asset_group_push_material(group.id, desc));
+    }
 
     // Add the cubemap to the group
     group.named_ids[name] = asset_group_push_model(group.id, meshes, materials, remaps); 
-     
-    // Destroy the model 
-    // @TODO
 
     // Done!
     FREYA_LOG_DEBUG("Loaded model \'%s\' from frpkg ", name.c_str());
