@@ -11,11 +11,8 @@
 ## Immediate 
 
 - 3D Models (loading and rendering)
-    - Load from a GLTF file 
-    - Write the info into the FRPKG file
     - Model component
     - Render the 3D model
-    - Use `meshoptimizer` to generate the normals and tangents of models, and compress the mesh files
 
 - Physics 
     - Either Box3D or Jolt... I'm not sure yet...

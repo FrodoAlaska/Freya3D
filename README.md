@@ -8,6 +8,7 @@ A 3D game engine inspired by the games of the early 2000s. What does that mean? 
 
 - [stb](https://github.com/nothings/stb)
 - [cgltf](https://github.com/jkuhlmann/cgltf)
+- [Assimp](https://github.com/assimp/assimp)
 - [dr_libs](https://github.com/mackron/dr_libs)
 - [LUA (CMake-based)](https://github.com/walterschell/Lua.git)
 - [FileWatch](https://github.com/ThomasMonkman/filewatch)

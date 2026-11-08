@@ -98,7 +98,10 @@ void* memory_copy(void* dest, const void* src, const sizei src_size) {
 }
 
 void memory_free(void* ptr) {
-  FREYA_ASSERT_LOG(ptr, "Cannot free an invalid pointer!");
+  if(!ptr) {
+    return;
+  }
+
   free(ptr);
 
   s_state.alloc_count--;

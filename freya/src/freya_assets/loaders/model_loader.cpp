@@ -3,7 +3,29 @@
 #include "freya_assets.h"
 #include "freya_logger.h"
 
-#include <cgltf/cgltf.h>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
+/// ----------------------------------------------------------------------
+/// NodeData
+struct NodeData {
+  freya::String name; 
+  freya::DynamicArray<aiMesh*> meshes;
+};
+/// NodeData
+/// ----------------------------------------------------------------------
+
+/// ----------------------------------------------------------------------
+/// ObjData
+struct ObjData {
+  freya::FilePath parent_dir;
+ 
+  ModelLoader* loader;
+  freya::DynamicArray<NodeData> nodes;
+};
+/// ObjData
+/// ----------------------------------------------------------------------
 
 /// ----------------------------------------------------------------------
 /// Private functions
@@ -12,25 +34,143 @@ static bool check_valid_extension(const freya::FilePath& ext) {
   return ext == ".gltf" ||
          ext == ".GLTF" || 
          ext == ".glb"  || 
-         ext == ".GLB";
+         ext == ".GLB"  || 
+         ext == ".fbx"  || 
+         ext == ".FBX";
 }
 
-static sg_filter gltf_filter_to_filter(const cgltf_filter_type filter) {
-  switch(filter) {
-    case cgltf_filter_type_undefined:
-      return (sg_filter)-1;
-    case cgltf_filter_type_nearest:
-      return SG_FILTER_NEAREST;
-    case cgltf_filter_type_linear:
-      return SG_FILTER_LINEAR;
-    case cgltf_filter_type_nearest_mipmap_nearest:
-      return SG_FILTER_NEAREST;
-    case cgltf_filter_type_linear_mipmap_nearest:
-      return SG_FILTER_LINEAR;
-    case cgltf_filter_type_nearest_mipmap_linear:
-      return SG_FILTER_NEAREST;
-    case cgltf_filter_type_linear_mipmap_linear:
-      return SG_FILTER_LINEAR;
+static void load_node_mesh(ObjData* data, aiMesh* mesh, MeshLoader& out_loader) {
+  // Go through all of the vertices of the given `mesh` and 
+  // convert them to the appropriate vertex type. 
+  
+  out_loader.vertices.reserve(mesh->mNumVertices);
+  for(freya::sizei iv = 0; iv < mesh->mNumVertices; iv++) {
+    // Adding the position
+   
+    freya::Vertex3D vertex;
+    vertex.position.x = mesh->mVertices[iv].x;
+    vertex.position.y = mesh->mVertices[iv].y;
+    vertex.position.z = mesh->mVertices[iv].z;
+    
+    // Adding the normal 
+
+    vertex.normal.x = mesh->mNormals[iv].x;
+    vertex.normal.y = mesh->mNormals[iv].y;
+    vertex.normal.z = mesh->mNormals[iv].z;
+
+    // Adding tangents 
+
+    vertex.tangent.x = mesh->mTangents[iv].x;
+    vertex.tangent.y = mesh->mTangents[iv].y;
+    vertex.tangent.z = mesh->mTangents[iv].z;
+
+    // Adding texture coordinates
+    
+    vertex.texture_coords.x = mesh->mTextureCoords[0][iv].x; 
+    vertex.texture_coords.y = mesh->mTextureCoords[0][iv].y; 
+
+    // Add the vertex 
+    out_loader.vertices.emplace_back(vertex);
+  }
+  
+  // Add the material index of the mesh to refrence it later on. Much later on.
+  out_loader.material_index = mesh->mMaterialIndex;
+
+  // Load indices
+
+  out_loader.indices.reserve(mesh->mNumFaces);
+  for(freya::sizei i = 0; i < mesh->mNumFaces; i++) {
+    aiFace* face = &mesh->mFaces[i];
+
+    for(freya::sizei j = 0; j < face->mNumIndices; j++) {
+      out_loader.indices.emplace_back((freya::u16)face->mIndices[j]);
+    }
+  } 
+}
+
+static void load_material_texture(aiMaterial* material, aiTextureType type, ObjData* data, freya::i8* index) {
+  for(freya::u32 i = 0; i < material->GetTextureCount(type); i++) {
+    aiString str;
+    material->GetTexture(type, i, &str);
+
+    // Convert into our `TextureLoader`
+     
+    TextureLoader texture;
+    if(!texture_loader_load(texture, freya::filepath_append(data->parent_dir, str.C_Str()))) {
+      continue;
+    }
+
+    // Add the new texture for later
+
+    data->loader->textures.emplace_back(texture);
+    *index += (freya::i8)data->loader->textures.size();
+  }
+}
+
+static void load_nodes(const aiScene* scene, ObjData* data, aiNode* ai_node) {
+  data->nodes.push_back(NodeData{.name = ai_node->mName.C_Str()});
+
+  // Starting at the root node, we will recursively go down 
+  // the scene tree and queue up each mesh to add it to the model later. 
+
+  for(freya::sizei i = 0; i < ai_node->mNumMeshes; i++) {
+    NodeData* node = &data->nodes[data->nodes.size() - 1];
+    node->meshes.push_back(scene->mMeshes[ai_node->mMeshes[i]]);
+  }
+
+  // The given `ai_node` will also have children of its own. Those 
+  // will need to be processed as well, obviously.
+  
+  for(freya::sizei i = 0; i < ai_node->mNumChildren; i++) {
+    load_nodes(scene, data, ai_node->mChildren[i]);
+  }
+}
+
+static void convert_meshes(ObjData* data) {
+  for(auto& node : data->nodes) {
+    for(auto& mesh : node.meshes) {
+      // Convert an `aiMesh` into our `MeshLoader`
+
+      MeshLoader mesh_loader;
+      load_node_mesh(data, mesh, mesh_loader);
+
+      // Add the new mesh for later
+      data->loader->meshes.emplace_back(mesh_loader);
+    }
+  }
+}
+
+static void convert_materials(const aiScene* scene, ObjData* data) {
+  data->loader->materials.reserve(scene->mNumMaterials);
+
+  // Go through each material in the scene 
+  for(freya::sizei i = 0; i < scene->mNumMaterials; i++) {
+    aiMaterial* material = scene->mMaterials[i];
+    MaterialLoader loader; 
+     
+    // Convert the colors
+     
+    aiColor3D diffuse;
+    material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
+    
+    loader.color.r = diffuse.r;  
+    loader.color.g = diffuse.g; 
+    loader.color.b = diffuse.b;
+
+    // Load individual values
+
+    material->Get(AI_MATKEY_ROUGHNESS_FACTOR, loader.roughness);
+    material->Get(AI_MATKEY_METALLIC_FACTOR, loader.metallic);
+
+    // Load textures of each kind
+
+    load_material_texture(material, aiTextureType_BASE_COLOR, data, &loader.albedo_index); 
+    load_material_texture(material, aiTextureType_METALNESS, data, &loader.metallic_index); 
+    load_material_texture(material, aiTextureType_DIFFUSE_ROUGHNESS, data, &loader.roughness_index); 
+    load_material_texture(material, aiTextureType_NORMALS, data, &loader.normal_index); 
+
+    // New material!
+    data->loader->materials.emplace_back(loader); 
   }
 }
 
@@ -41,110 +181,79 @@ static sg_filter gltf_filter_to_filter(const cgltf_filter_type filter) {
 /// Model loader functions
 
 bool model_loader_load(ModelLoader& out_loader, const freya::FilePath& path) {
+  // Try to get the model file inside the given path
+  
+  freya::FilePath full_path = "";
+  bool found                = false;
+
+  freya::filesystem_directory_iterate(path, [&](const freya::FilePath& base_dir, 
+                                                const freya::FilePath& current_path, 
+                                                void* user_data) {
+      // Check the extension of the current file
+
+      freya::FilePath ext = freya::filepath_extension(current_path);
+      if(!check_valid_extension(ext)) {
+        return true; // This is not a valid file... keep going
+      }
+
+      // Done! 
+     
+      full_path = current_path; 
+      found     = true;
+
+      return false; // Returning false to stop the iteration
+  });
+
   // Sanity check
 
-  freya::FilePath ext = freya::filepath_extension(path);
-  if(!check_valid_extension(ext)) {
-    FREYA_LOG_WARN("Invalid model file found at \'%s\'!", path.c_str());
-    return false;
-  }
-
-  //
-  // Load the GLTF file
-  //
-
-  cgltf_data* gltf      = new cgltf_data{};
-  cgltf_options options = {}; 
-
-  cgltf_result res = cgltf_parse_file(&options, path.c_str(), &gltf);
-  if(res != cgltf_result_success) {
-    cgltf_free(gltf);
-
-    FREYA_LOG_ERROR("Failed to open GLTF file at \'%s\'", path.c_str());
+  if(!found) {
+    FREYA_LOG_ERROR("Could not find a valid model file at \'%s\'!", full_path.c_str());
     return false;
   }
   
-  //
-  // Load the buffers
-  //
+  // Load Assimp file
+  
+  freya::i32 flags = (aiProcess_Triangulate           | 
+                      aiProcess_FlipUVs               | 
+                      aiProcess_CalcTangentSpace      |
+                      aiProcess_GenNormals            | 
+                      aiProcess_SplitLargeMeshes      |
+                      aiProcess_ImproveCacheLocality  | 
+                      aiProcess_JoinIdenticalVertices |
+                      aiProcess_OptimizeMeshes        | 
+                      aiProcess_OptimizeGraph         |
+                      // aiProcess_LimitBoneWeights      | 
+                      // aiProcess_PopulateArmatureData  |
+                      aiProcess_GlobalScale); 
 
-  res = cgltf_load_buffers(&options, gltf, path.c_str());
-  if(res != cgltf_result_success) {
-    cgltf_free(gltf);
+  Assimp::Importer imp; 
+  imp.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, freya::MODEL_IMPORT_SCALE);
+  // imp.SetPropertyInteger(AI_CONFIG_PP_LBW_MAX_WEIGHTS, freya::JOINT_WEIGHTS_MAX);
 
-    FREYA_LOG_ERROR("Failed to load GLTF buffers at \'%s\'", path.c_str());
+  const aiScene* scene = imp.ReadFile(full_path, flags);
+  if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
+    FREYA_LOG_ERROR("Could not load Model at \'%s\' - %s", full_path.c_str(), imp.GetErrorString());
     return false;
   }
 
-  // 
-  // Load the meshes
-  //
-
-  for(freya::sizei i = 0; i < gltf->meshes_count; i++) {
-    // @TODO   
-  }
-
-  // 
-  // Load textures 
-  //
-
-  for(freya::sizei i = 0; i < gltf->textures_count; i++) {
-    cgltf_texture* texture = &gltf->textures[i];
-    cgltf_image* image     = texture->image;
-    cgltf_sampler* sampler = texture->sampler;
-
-    //
-    // Load the texture
-    //
-     
-    TextureLoader loader; 
-
-    // Load the image (either an internal or an external image)
-
-    if(image->uri) {
-      texture_loader_load(loader, freya::filepath_append(freya::filepath_parent_path(path), freya::FilePath(image->uri)));
-    }
-    else {
-      texture_loader_load(loader, cgltf_buffer_view_data(image->buffer_view), image->buffer_view->size);
-    }
-
-    // Load the sampler
-     
-    loader.sampler_desc.min_filter = gltf_filter_to_filter(sampler->min_filter);
-    loader.sampler_desc.mag_filter = gltf_filter_to_filter(sampler->mag_filter);
-  }
-
-  // 
-  // Load materials
-  //
+  // Loading everything into `ObjData`
   
-  for(freya::sizei i = 0; i < gltf->materials_count; i++) {
-    cgltf_material* mat = &gltf->materials[i]; 
+  ObjData data; 
+  data.parent_dir = path;
+  data.loader     = &out_loader;
 
-    // Load the material
-     
-    MaterialLoader mat_loader;
-    mat_loader.name = freya::String(mat->name);
+  // Queue up all of the meshes that need to be converted
+  load_nodes(scene, &data, scene->mRootNode);
 
-    mat_loader.roughness = mat->pbr_metallic_roughness.metallic_factor;
-    mat_loader.metallic  = mat->pbr_metallic_roughness.roughness_factor;
-    
-    freya::f32* color = &mat->pbr_metallic_roughness.base_color_factor[0];
-    mat_loader.color  = freya::Vec3(color[0], color[1], color[2]);
+  // Meshes init 
+  convert_meshes(&data);
 
-    mat_loader.albedo_index    = (freya::u8)cgltf_texture_index(gltf, mat->pbr_metallic_roughness.base_color_texture.texture);
-    mat_loader.roughness_index = (freya::u8)cgltf_texture_index(gltf, mat->pbr_metallic_roughness.metallic_roughness_texture.texture);
-    mat_loader.metallic_index  = -1; // @TODO (CGLTF): GLTF combines both the metallic and roughness together... shit!
-    mat_loader.normal_index    = (freya::u8)cgltf_texture_index(gltf, mat->normal_texture.texture);
-
-    out_loader.materials.emplace_back(mat_loader);
-  }
+  // Materials init
+  convert_materials(scene, &data);  
 
   // Done!
  
-  cgltf_free(gltf);
-  
-  FREYA_LOG_TRACE("Successfully loaded model at '\%s\'", path.c_str());
+  FREYA_LOG_TRACE("Successfully loaded model at '\%s\'", full_path.c_str());
   return true;
 }
 

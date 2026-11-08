@@ -38,6 +38,14 @@ const i16 ASSET_ID_INVALID    = -1;
 /// The ID of the group associated with the rasset cache.
 const i32 ASSET_CACHE_ID      = 0;
 
+/// The maximum number of weights a joint can have in an animation file.
+const sizei JOINT_WEIGHTS_MAX = 4;
+
+/// Some 3D models have their own unit of scales when being imported. 
+/// In order to unify all the models, we apply this multiplier to the models 
+/// before improting to the final model format.
+const f32 MODEL_IMPORT_SCALE  = 0.1f;
+
 /// Assets consts
 ///---------------------------------------------------------------------------------------------------------------------
 

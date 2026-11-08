@@ -62,7 +62,28 @@ FetchContent_Declare(
   URL https://github.com/wolfpld/tracy/archive/refs/tags/v0.13.1.zip
 )
 
-FetchContent_MakeAvailable(glm imgui lua tracy)
+
+# Assimp 
+
+set(ASSIMP_BUILD_ALL_EXPORTERS_BY_DEFAULT OFF)
+set(ASSIMP_BUILD_ALL_IMPORTERS_BY_DEFAULT OFF)
+set(ASSIMP_BUILD_SAMPLES                  OFF)
+set(ASSIMP_BUILD_TESTS                    OFF)
+set(ASSIMP_BUILD_ASSIMP_VIEW              OFF)
+set(ASSIMP_BUILD_ASSIMP_TOOLS             OFF)
+set(ASSIMP_NO_EXPORT                      OFF)
+set(ASSIMP_INSTALL                        OFF)
+
+set(ASSIMP_BUILD_FBX_IMPORTER  ON)
+set(ASSIMP_BUILD_GLTF_IMPORTER ON)
+
+FetchContent_Declare(
+  assimp 
+  URL https://github.com/assimp/assimp/archive/refs/tags/v6.0.5.zip
+)
+
+# Fetch everything
+FetchContent_MakeAvailable(glm imgui lua tracy assimp)
 
 if(NOT DEFINED EMSCRIPTEN) # These libraries are not required when building for the web
   # GLFW
@@ -112,10 +133,12 @@ set(FREYA_INCLUDES
   ${imgui_SOURCE_DIR}/misc/cpp
 
   ${tracy_SOURCE_DIR}/public
+  ${assimp_SOURCE_DIR}/include
 )
 
 set(FREYA_COMMON_LIBRARIES 
   lua_static
+  assimp
 )
 
 set(FREYA_LIBRARIES ${FREYA_COMMON_LIBRARIES})
