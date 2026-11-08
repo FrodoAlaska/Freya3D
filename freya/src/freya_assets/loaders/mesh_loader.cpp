@@ -368,5 +368,26 @@ void mesh_loader_save(const MeshLoader& loader, freya::File& file) {
   freya::file_write_bytes(file, &loader.material_index, sizeof(loader.material_index));
 }
 
+void mesh_loader_read(MeshLoader& loader, freya::File& file) {
+  // Read the vertices 
+
+  freya::u32 vertices_count = 0;
+  freya::file_read_bytes(file, &vertices_count, sizeof(vertices_count));
+
+  loader.vertices.resize(vertices_count);
+  freya::file_read_bytes(file, loader.vertices.data(), sizeof(freya::Vertex3D) * vertices_count);
+
+  // Read the indices 
+
+  freya::u32 indices_count = 0;
+  freya::file_read_bytes(file, &indices_count, sizeof(indices_count));
+
+  loader.indices.resize(indices_count);
+  freya::file_read_bytes(file, loader.indices.data(), sizeof(freya::u16) * indices_count);
+
+  // Read the material index 
+  freya::file_read_bytes(file, &loader.material_index, sizeof(loader.material_index));
+}
+
 /// Mesh loader functions
 /// ----------------------------------------------------------------------

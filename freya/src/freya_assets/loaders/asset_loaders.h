@@ -112,6 +112,8 @@ void mesh_loader_load(MeshLoader& out_loader, const freya::MeshType type);
 
 void mesh_loader_save(const MeshLoader& loader, freya::File& file);
 
+void mesh_loader_read(MeshLoader& loader, freya::File& file);
+
 /// Mesh loader functions
 /// ----------------------------------------------------------------------
 

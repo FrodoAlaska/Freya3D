@@ -198,7 +198,59 @@ void model_loader_save(const ModelLoader& loader, freya::File& file) {
 }
 
 void model_loader_read(ModelLoader& loader, freya::File& file) {
-  // @TODO
+  //
+  // Read all of the meshes 
+  // 
+
+  freya::u16 meshes_count = 0;
+  freya::file_read_bytes(file, &meshes_count, sizeof(meshes_count));
+
+  loader.meshes.resize(meshes_count);
+  for(freya::u16 i = 0; i < meshes_count; i++) {
+    MeshLoader& mesh = loader.meshes[i];
+    mesh_loader_read(mesh, file);
+  }
+
+  //
+  // Read the textures
+  //
+
+  freya::u8 textures_count = 0;
+  freya::file_read_bytes(file, &textures_count, sizeof(textures_count));
+
+  loader.textures.resize(textures_count);
+  for(freya::u16 i = 0; i < textures_count; i++) {
+    TextureLoader& texture = loader.textures[i];
+    texture_loader_read(texture, file);
+  }
+
+  //
+  // Write the materials 
+  //
+  
+  freya::u16 materials_count = 0;
+  freya::file_read_bytes(file, &materials_count, sizeof(materials_count));
+  
+  loader.materials.resize(materials_count);
+  for(freya::u16 i = 0; i < materials_count; i++) {
+    MaterialLoader& mat = loader.materials[i];
+
+    // Write the name 
+    freya::file_read_bytes(file, &mat.name);
+
+    // Write the material variables 
+     
+    freya::file_read_bytes(file, &mat.roughness, sizeof(mat.roughness));
+    freya::file_read_bytes(file, &mat.metallic, sizeof(mat.metallic));
+    freya::file_read_bytes(file, &mat.color[0], sizeof(mat.color));
+
+    // Write the indices 
+
+    freya::file_read_bytes(file, &mat.albedo_index, sizeof(mat.albedo_index));
+    freya::file_read_bytes(file, &mat.roughness_index, sizeof(mat.roughness_index));
+    freya::file_read_bytes(file, &mat.metallic_index, sizeof(mat.metallic_index));
+    freya::file_read_bytes(file, &mat.normal_index, sizeof(mat.normal_index));
+  }
 }
 
 /// Model loader functions
