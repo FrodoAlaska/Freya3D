@@ -70,7 +70,7 @@ bool app_init(const freya::Args& args, freya::Window* window) {
                                       20.0f, 
                                       0.1f);
 
-  freya::entity_add_directional_light(s_app.world, s_app.camera_entt, freya::Vec3(0.0f, 1.0f, 0.0f));
+  freya::entity_add_directional_light(s_app.world, s_app.camera_entt, freya::Vec3(0.2f, -.180f, 0.0f));
   freya::entity_add_skybox(s_app.world, 
                            s_app.camera_entt, 
                            freya::asset_group_get_id(s_app.group_id, "corona"), 
@@ -94,22 +94,23 @@ bool app_init(const freya::Args& args, freya::Window* window) {
   // freya::entity_add_tag(s_app.world, point_light, "Point Light");
   // freya::entity_add_point_light(s_app.world, point_light);
 
-  // Plane init
+  // Ground init
 
-  mesh_id = freya::asset_group_push_mesh(s_app.group_id, freya::MESH_PLANE);
+  mesh_id = freya::asset_group_push_mesh(s_app.group_id, freya::MESH_CUBE);
   
   mat_desc = {
-    .name = "plane_material", 
+    .name = "ground_material", 
 
     .albedo_id = freya::asset_group_get_id(s_app.group_id, "brickwall"),
     .normal_id = freya::asset_group_get_id(s_app.group_id, "brickwall_normal"),
   };
   material_id = freya::asset_group_push_material(s_app.group_id, mat_desc);
   
-  freya::EntityID plane_entt = freya::entity_create(s_app.world, freya::Vec3(10.0f, -1.0f, 10.0f), freya::Vec3(12.0f, 0.1f, 12.0f)); 
+  freya::EntityID ground_entt = freya::entity_create(s_app.world, freya::Vec3(10.0f, -1.0f, 10.0f), 
+                                                                  freya::Vec3(12.0f, 0.1f, 12.0f)); 
   
-  freya::entity_add_mesh(s_app.world, plane_entt, mesh_id, material_id);
-  freya::entity_add_tag(s_app.world, plane_entt, "Plane");
+  freya::entity_add_mesh(s_app.world, ground_entt, mesh_id, material_id);
+  freya::entity_add_tag(s_app.world, ground_entt, "Ground");
 
   // Done!
   return true;

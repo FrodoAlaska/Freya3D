@@ -660,6 +660,7 @@ void renderer_init(Window* window) {
   init_queues();
   
   s_renderer.frame_data.u_ambient_color = Vec3(1.0f);
+  s_renderer.frame_data.u_gamma         = 2.2f;
 
   s_renderer.dir_light.direction = Vec3(0.0f);
   s_renderer.dir_light.color     = Vec3(1.0f);
@@ -706,8 +707,16 @@ void renderer_set_clear_color(const Color& color) {
   s_renderer.color = color;
 }
 
+void renderer_set_gamma(f32 gamma) {
+  s_renderer.frame_data.u_gamma = gamma;
+}
+
 const Color& renderer_get_clear_color() {
   return s_renderer.color;
+}
+
+f32 renderer_get_gamma() {
+  return s_renderer.frame_data.u_gamma;
 }
 
 sg_swapchain renderer_get_default_swapchain() {

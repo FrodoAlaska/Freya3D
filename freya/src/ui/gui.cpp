@@ -198,6 +198,13 @@ void gui_renderer_info() {
     renderer_set_clear_color(clear_color);
   }
 
+  // Gamma 
+
+  f32 gamma = renderer_get_gamma();
+  if(ImGui::DragFloat("Gamma", &gamma, s_gui.small_step, 1.0f, 2.6f)) {
+    renderer_set_gamma(gamma);
+  }
+
   gui_end_panel();
 }
 
@@ -312,6 +319,13 @@ void gui_debug_info() {
       if(is_picked) {
         renderer_set_clear_color(clear_color);
       }
+
+      // Gamma 
+
+      f32 gamma = renderer_get_gamma();
+      if(ImGui::DragFloat("Gamma", &gamma, s_gui.small_step, 1.0f, 2.6f)) {
+        renderer_set_gamma(gamma);
+      }
     }
   }
 
@@ -384,7 +398,7 @@ void gui_edit_audio_source(const char* name, AudioSourceID& source) {
   // Source Info
   // 
 
-  // Volume*
+  // Volume
   
   if(ImGui::SliderFloat("Volume", &source_desc.volume, 0.0f, 1.0f)) {
     audio_source_set_volume(source, source_desc.volume);
