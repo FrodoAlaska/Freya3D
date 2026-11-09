@@ -110,7 +110,7 @@ void entity_world_update(EntityWorld& world, const f32 delta_time) {
       PointLightComponent& light = view.get<PointLightComponent>(entt);
       Transform& transform       = view.get<Transform>(entt); 
 
-      light.position = transform.position;
+      light.position = transform._position;
     }
   }
   
@@ -120,10 +120,14 @@ void entity_world_update(EntityWorld& world, const f32 delta_time) {
 
     auto view = world.view<MeshComponent, Transform>();
     for(auto entt : view) {
-      // @TODO (Mesh/better system than this)
+      MeshComponent& mesh  = view.get<MeshComponent>(entt);
+      Transform& transform = view.get<Transform>(entt);
       
-      MeshComponent& mesh = view.get<MeshComponent>(entt);
-      mesh.transform      = transform_apply(view.get<Transform>(entt));
+      // Only update the transform when necessary
+
+      if(transform._is_dirty) {
+        mesh.transform = transform_apply(transform);
+      }
     }
   }
   
@@ -133,10 +137,14 @@ void entity_world_update(EntityWorld& world, const f32 delta_time) {
 
     auto view = world.view<ModelComponent, Transform>();
     for(auto entt : view) {
-      // @TODO (Model/better system than this)
-      
       ModelComponent& model = view.get<ModelComponent>(entt);
-      model.transform       = transform_apply(view.get<Transform>(entt));
+      Transform& transform  = view.get<Transform>(entt);
+      
+      // Only update the transform when necessary
+
+      if(transform._is_dirty) {
+        model.transform = transform_apply(transform);
+      }
     }
   }
 }
@@ -157,11 +165,9 @@ EntityID entity_create(EntityWorld& world,
   // Add a transform component  
 
   Transform transform; 
-  transform.position = position; 
-  transform.scale    = scale;
-  transform.rotation = rotation; 
-
-  transform_apply(transform);
+  transform_translate(transform, position); 
+  transform_scale(transform, scale);
+  transform_rotate(transform, rotation); 
 
   world.emplace<Transform>(entt_id, transform);
 
@@ -206,8 +212,8 @@ Camera& entity_add_camera(EntityWorld& world, EntityID& entt, const CameraDesc& 
   camera.near_plane = desc.near_plane;
   camera.far_plane  = desc.far_plane;
 
-  camera.position = transform.position;
-  camera.rotation = transform.rotation;
+  camera.position = transform._position;
+  camera.rotation = transform._rotation;
 
   camera.view = Mat4(1.0f);
 
@@ -228,7 +234,7 @@ AudioSourceID& entity_add_audio_source(EntityWorld& world,
                                        const AssetID& audio_buffer_id) {
   Transform& transform = world.get<Transform>(entt);
 
-  desc.position      = transform.position; 
+  desc.position      = transform._position; 
   desc.buffers[0]    = asset_group_get_audio_buffer(audio_buffer_id);
   desc.buffers_count = 1;
 
@@ -275,7 +281,7 @@ PointLightComponent& entity_add_point_light(EntityWorld& world,
                                             f32 radius, 
                                             f32 fall_off) {
   Transform& transform = world.get<Transform>(entt);
-  return world.emplace<PointLightComponent>(entt, transform.position, color, radius, fall_off); 
+  return world.emplace<PointLightComponent>(entt, transform._position, color, radius, fall_off); 
 }
 
 SkyboxComponent& entity_add_skybox(EntityWorld& world, 

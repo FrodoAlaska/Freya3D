@@ -70,7 +70,7 @@ bool app_init(const freya::Args& args, freya::Window* window) {
                                       20.0f, 
                                       0.1f);
 
-  freya::entity_add_directional_light(s_app.world, s_app.camera_entt, freya::Vec3(0.0f));
+  freya::entity_add_directional_light(s_app.world, s_app.camera_entt, freya::Vec3(0.0f, 1.0f, 0.0f));
   freya::entity_add_skybox(s_app.world, 
                            s_app.camera_entt, 
                            freya::asset_group_get_id(s_app.group_id, "corona"), 
@@ -78,17 +78,21 @@ bool app_init(const freya::Args& args, freya::Window* window) {
 
   // Model init
 
-  freya::EntityID model_entt = freya::entity_create(s_app.world, freya::Vec3(10.0f, 0.0f, 10.0f)); 
+  freya::Vec3 position = freya::Vec3(10.0f, 0.0f, 10.0f);
+  freya::Vec3 scale    = freya::Vec3(0.1f);
+  freya::Quat rotation = freya::quat_angle_axis(freya::Vec3(1.0f, 0.0f, 0.0f), FREYA_TO_RADIANS(0.0f));
+
+  freya::EntityID model_entt = freya::entity_create(s_app.world, position, scale, rotation); 
   
   freya::entity_add_model(s_app.world, model_entt, freya::asset_group_get_id(s_app.group_id, "behelit"));
   freya::entity_add_tag(s_app.world, model_entt, "Model");
 
   // Point light init
   
-  freya::EntityID point_light = freya::entity_create(s_app.world, freya::Vec3(10.0f, 0.0f, 10.0f)); 
-
-  freya::entity_add_tag(s_app.world, point_light, "Point Light");
-  freya::entity_add_point_light(s_app.world, point_light);
+  // freya::EntityID point_light = freya::entity_create(s_app.world, freya::Vec3(10.0f, 0.0f, 10.0f)); 
+  //
+  // freya::entity_add_tag(s_app.world, point_light, "Point Light");
+  // freya::entity_add_point_light(s_app.world, point_light);
 
   // Plane init
 

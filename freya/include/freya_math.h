@@ -135,9 +135,18 @@ typedef glm::quat Quat;
 ///---------------------------------------------------------------------------------------------------------------------
 /// Transform
 struct Transform {
-  Vec3 position = Vec3(0.0f); 
-  Vec3 scale    = Vec3(1.0f);
-  Quat rotation = Quat(1.0f, 0.0f, 0.0f, 0.0f);
+  /// @NOTE: 
+  ///
+  /// The members below SHOULD NOT be touched directly 
+  /// by any client code. Rather, use the various 
+  /// `transform_*` functions to manipulate the transform. 
+  ///
+
+  Vec3 _position = Vec3(0.0f); 
+  Vec3 _scale    = Vec3(1.0f);
+  Quat _rotation = Quat(1.0f, 0.0f, 0.0f, 0.0f);
+
+  bool _is_dirty = false;
 };
 /// Transform
 ///---------------------------------------------------------------------------------------------------------------------
@@ -523,56 +532,58 @@ FREYA_API const Vec3 quat_to_euler(const Quat& q);
 ///---------------------------------------------------------------------------------------------------------------------
 /// Transform functions
 
-/// Apply the transformation given the position, rotation, and scale memebers of `trans`.
+/// Apply the transformation given the position, rotation, and scale memebers of `trans`, 
+/// returning a new transform matrix.
 /// 
-/// @NOTE: This is more performant method to edit transforms, sicne it will only update 
-/// the internal matrix once instead of each component transformation
+/// @NOTE: This function should be used after translating, rotating, or scaling the 
+/// transform to apply the changes. Also, this function will set the `trans._is_dirty`
+/// to `false` to avoid any unnecessary matrix multiplications in the future.
 FREYA_API Mat4 transform_apply(Transform& trans);
 
-/// Translate the given `trans` by `pos`, returning a transform `Mat4`.
-FREYA_API Mat4 transform_translate(Transform& trans, const Vec3& pos);
+/// Translate the given `trans` by `pos`.
+FREYA_API void transform_translate(Transform& trans, const Vec3& pos);
 
-/// Rotate the given `trans` by `rot`, returning a transform `Mat4`.
+/// Rotate the given `trans` by `rot`.
 ///
 /// @NOTE: Internally, the given `rot` quaternion is normalized for better precision.
-FREYA_API Mat4 transform_rotate(Transform& trans, const Quat& rot);
+FREYA_API void transform_rotate(Transform& trans, const Quat& rot);
 
 /// Rotate the given `trans` by `axis_angle`, using `x, y, z` as the axis and 
-/// `z` as the angle in radians, returning a transform `Mat4`.
-FREYA_API Mat4 transform_rotate(Transform& trans, const Vec4& axis_angle);
+/// `z` as the angle in radians.
+FREYA_API void transform_rotate(Transform& trans, const Vec4& axis_angle);
 
-/// Rotate the given `trans` by `angle` in radians around `axis`, returning a transform `Mat4`.
-FREYA_API Mat4 transform_rotate(Transform& trans, const Vec3& axis, const f32 angle);
+/// Rotate the given `trans` by `angle` in radians around `axis`.
+FREYA_API void transform_rotate(Transform& trans, const Vec3& axis, const f32 angle);
 
-/// Scale the given `trans` by `scale`, returning a transform `Mat4`.
-FREYA_API Mat4 transform_scale(Transform& trans, const Vec3& scale);
+/// Scale the given `trans` by `scale`.
+FREYA_API void transform_scale(Transform& trans, const Vec3& scale);
 
-/// Lerp between the two given transforms `trans_a` and `trans_b` by the given `delta` value, returning a transform `Mat4`.
-FREYA_API Mat4 transform_lerp(Transform& trans_a, const Transform& trans_b, const f32 delta);
+/// Lerp between the two given transforms `trans_a` and `trans_b` by the given `delta` value.
+FREYA_API void transform_lerp(Transform& trans_a, const Transform& trans_b, const f32 delta);
 
 /// Lerp the components of the given transform `trans` to `position`, `rotation`, 
-/// and `scale` by the given `delta` value, returning a transform `Mat4`.
-FREYA_API Mat4 transform_lerp(Transform& trans, 
-                               const Vec3& position, 
-                               const Quat& rotation, 
-                               const Vec3& scale,
-                               const f32 delta);
+/// and `scale` by the given `delta` value.
+FREYA_API void transform_lerp(Transform& trans, 
+                              const Vec3& position, 
+                              const Quat& rotation, 
+                              const Vec3& scale,
+                              const f32 delta);
 
 /// Lerp the position component of the given transform `trans` to `position` 
-/// by the given `delta` value, returning a transform `Mat4`.
-FREYA_API Mat4 transform_lerp_position(Transform& trans, const Vec3& position, const f32 delta);
+/// by the given `delta` value.
+FREYA_API void transform_lerp_position(Transform& trans, const Vec3& position, const f32 delta);
 
 /// Use the spherical linear interpolation method to interpolate the roation component 
-/// of `trans` to `rotation` by `delta`, returning a transform `Mat4`.
-FREYA_API Mat4 transform_slerp_rotation(Transform& trans, const Quat& rotation, const f32 delta);
+/// of `trans` to `rotation` by `delta`.
+FREYA_API void transform_slerp_rotation(Transform& trans, const Quat& rotation, const f32 delta);
 
 /// Lerp the rotation component of the given transform `trans` to `axis` and `angle` 
-/// by the given `delta` value, returning a transform `Mat4`.
-FREYA_API Mat4 transform_lerp_rotation(Transform& trans, const Vec3& axis, const f32 angle, const f32 delta);
+/// by the given `delta` value.
+FREYA_API void transform_lerp_rotation(Transform& trans, const Vec3& axis, const f32 angle, const f32 delta);
 
 /// Lerp the scale component of the given transform `trans` to `scale` 
-/// by the given `delta` value, returning a transform `Mat4`.
-FREYA_API Mat4 transform_lerp_scale(Transform& trans, const Vec3& scale, const f32 delta);
+/// by the given `delta` value.
+FREYA_API void transform_lerp_scale(Transform& trans, const Vec3& scale, const f32 delta);
 
 /// Transform functions
 ///---------------------------------------------------------------------------------------------------------------------

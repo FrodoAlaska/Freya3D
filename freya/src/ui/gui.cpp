@@ -340,13 +340,15 @@ void gui_edit_transform(const char* name, Transform* transform) {
   ///
   // SRT translation
   // 
-  
-  if(ImGui::DragFloat3("Position", &transform->position[0], s_gui.big_step)) {
-    transform_translate(*transform, transform->position);
+ 
+  Vec3 position = transform->_position;
+  if(ImGui::DragFloat3("Position", &position[0], s_gui.big_step)) {
+    transform_translate(*transform, position);
   }
 
-  if(ImGui::DragFloat3("Scale", &transform->scale[0], s_gui.big_step)) {
-    transform_scale(*transform, Vec3(transform->scale));
+  Vec3 scale = transform->_scale;
+  if(ImGui::DragFloat3("Scale", &scale[0], s_gui.big_step)) {
+    transform_scale(*transform, scale);
   }
 
   if(ImGui::DragFloat3("Rotation", &s_gui.rotations[name][0], s_gui.big_step)) {
