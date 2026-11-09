@@ -112,6 +112,9 @@ struct Mesh {
   
   /// The number of elements to render in this mesh
   u32 elements_count = 0;
+
+  /// The bounding box of the mesh 
+  BoundingBox bounds;
 };
 /// Mesh 
 ///---------------------------------------------------------------------------------------------------------------------

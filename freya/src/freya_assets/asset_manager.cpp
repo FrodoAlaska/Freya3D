@@ -903,7 +903,8 @@ AssetID asset_group_push_shader(const AssetGroupID& group_id, const sg_shader_de
 AssetID asset_group_push_mesh(const AssetGroupID& group_id, 
                               const sg_buffer_desc& vertex_desc,
                               const sg_buffer_desc& index_desc, 
-                              const u32 elements_count) {
+                              u32 elements_count, 
+                              const BoundingBox& bounds) {
 
   GROUP_CHECK(group_id);
   AssetGroup& group = s_manager.groups[group_id.get_id()];
@@ -920,6 +921,7 @@ AssetID asset_group_push_mesh(const AssetGroupID& group_id,
     .index_buffer  = asset_group_get_buffer(index_id),
 
     .elements_count = (u32)elements_count,
+    .bounds         = bounds
   };
 
   // New mesh ID
@@ -951,11 +953,16 @@ AssetID asset_group_push_mesh(const AssetGroupID& group_id,
   idx_desc.usage.index_buffer = true;
   idx_desc.data               = sg_range{indices.data(), indices.size() * sizeof(u16)};
 
+  // Calculate the bounding box 
+  BoundingBox bounds = bounding_box_calculate(vertices);
+
   // Create the mesh
 
-  AssetID id = asset_group_push_mesh(group_id, vert_desc, idx_desc, indices.size());
-  FREYA_LOG_DEBUG("     Vertices = %zu", vertices.size());
-  FREYA_LOG_DEBUG("     Indices  = %zu", indices.size());
+  AssetID id = asset_group_push_mesh(group_id, vert_desc, idx_desc, indices.size(), bounds);
+  FREYA_LOG_DEBUG("     Vertices   = %zu", vertices.size());
+  FREYA_LOG_DEBUG("     Indices    = %zu", indices.size());
+  FREYA_LOG_DEBUG("     Min bounds = %s", vec3_to_string(bounds.min).c_str());
+  FREYA_LOG_DEBUG("     Max bounds = %s", vec3_to_string(bounds.max).c_str());
 
   // Done!
   return id;

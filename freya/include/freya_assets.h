@@ -303,12 +303,14 @@ FREYA_API AssetID asset_group_push_cubemap(const AssetGroupID& group_id,
 FREYA_API AssetID asset_group_push_shader(const AssetGroupID& group_id, const sg_shader_desc& shader_desc);
 
 /// Push a new `Mesh` into `group_id`, using the given `vertex_desc` and `index_desc` to create 
-/// the internal mesh buffers, and `elements_count` to use for rendering later,
+/// the internal mesh buffers, `elements_count` to use for rendering later, and `bounds` that
+/// can be calculated using `bounding_box_calculate` given the vertices,
 /// returning a valid `AssetID` to be used later.
 FREYA_API AssetID asset_group_push_mesh(const AssetGroupID& group_id, 
                                         const sg_buffer_desc& vertex_desc,
                                         const sg_buffer_desc& index_desc, 
-                                        const u32 elements_count);
+                                        u32 elements_count, 
+                                        const BoundingBox& bounds);
 
 /// Push a new `Mesh` into `group_id`, using the given `vertices` and `indices`,
 /// returning a valid `AssetID` to be used later.

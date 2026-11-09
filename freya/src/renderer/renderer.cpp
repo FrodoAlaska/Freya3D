@@ -157,7 +157,7 @@ static void init_defaults() {
     idx_desc.usage.index_buffer = true;
     idx_desc.data               = SG_RANGE(indices);
 
-    s_renderer.defaults.quad_mesh = asset_group_get_mesh(asset_group_push_mesh(s_renderer.group_id, vert_desc, idx_desc, 6));
+    s_renderer.defaults.quad_mesh = asset_group_get_mesh(asset_group_push_mesh(s_renderer.group_id, vert_desc, idx_desc, 6, {}));
   }
   
   //
@@ -218,7 +218,7 @@ static void init_defaults() {
     idx_desc.usage.index_buffer = true;
     idx_desc.data               = SG_RANGE(indices);
 
-    s_renderer.defaults.skybox_mesh = asset_group_get_mesh(asset_group_push_mesh(s_renderer.group_id, vert_desc, idx_desc, 36));
+    s_renderer.defaults.skybox_mesh = asset_group_get_mesh(asset_group_push_mesh(s_renderer.group_id, vert_desc, idx_desc, 36, {}));
   }
 
   // 
@@ -246,7 +246,7 @@ static void init_defaults() {
     idx_desc.usage.index_buffer = true;
     idx_desc.data               = SG_RANGE(indices);
 
-    AssetID mesh_id                    = asset_group_push_mesh(s_renderer.group_id, vert_desc, idx_desc, 6);
+    AssetID mesh_id                    = asset_group_push_mesh(s_renderer.group_id, vert_desc, idx_desc, 6, {});
     s_renderer.defaults.billboard_mesh = asset_group_get_mesh(mesh_id);
   }
 
