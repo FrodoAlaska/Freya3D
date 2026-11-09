@@ -76,12 +76,12 @@ bool app_init(const freya::Args& args, freya::Window* window) {
                            freya::asset_group_get_id(s_app.group_id, "corona"), 
                            freya::Vec3(0.025f));
 
-  // Mesh 1 init
+  // Model init
 
-  freya::EntityID mesh_entt = freya::entity_create(s_app.world, freya::Vec3(10.0f, 0.0f, 10.0f)); 
+  freya::EntityID model_entt = freya::entity_create(s_app.world, freya::Vec3(10.0f, 0.0f, 10.0f)); 
   
-  freya::entity_add_mesh(s_app.world, mesh_entt, mesh_id, material_id);
-  freya::entity_add_tag(s_app.world, mesh_entt, "Mesh");
+  freya::entity_add_model(s_app.world, model_entt, freya::asset_group_get_id(s_app.group_id, "behelit"));
+  freya::entity_add_tag(s_app.world, model_entt, "Model");
 
   // Point light init
   

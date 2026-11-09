@@ -124,6 +124,15 @@ struct MeshInstancedComponent {
 /// ----------------------------------------------------------------------
 
 /// ----------------------------------------------------------------------
+/// ModelComponent
+struct ModelComponent {
+  Model* model   = nullptr;
+  Mat4 transform = Mat4(1.0f);
+};
+/// ModelComponent
+/// ----------------------------------------------------------------------
+
+/// ----------------------------------------------------------------------
 /// BillboardComponent
 struct BillboardComponent {
   Texture texture = {}; 
@@ -250,6 +259,9 @@ FREYA_API MeshInstancedComponent& entity_add_mesh_instanced(EntityWorld& world,
                                                             EntityID& entt, 
                                                             const AssetID& mesh_id, 
                                                             const AssetID& material_id = {});
+
+/// A helper function to add a model component to `entt`, using the given `model_id`.
+FREYA_API ModelComponent& entity_add_model(EntityWorld& world, EntityID& entt, const AssetID& model_id);
 
 /// A helper function to add a billboard component to `entt`, using the given
 /// `texture_id` to give to the render command.

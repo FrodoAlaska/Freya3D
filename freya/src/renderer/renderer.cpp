@@ -467,6 +467,140 @@ static void init_queues() {
   FREYA_LOG_TRACE("Render queues initialized");
 }
 
+static void render_queue_mesh(RenderQueue& queue, MeshComponent& comp) {
+  RenderQueueEntry entry;
+
+  // Setup the bindings of the entry
+
+  entry.bindings.vertex_buffers[0] = comp.mesh.vertex_buffer; 
+  entry.bindings.index_buffer      = comp.mesh.index_buffer; 
+
+  entry.bindings.views[0] = queue.transforms_view;
+  entry.bindings.views[1] = comp.material.albedo_map.view;
+  entry.bindings.views[2] = comp.material.roughness_map.view;
+  entry.bindings.views[3] = comp.material.metallic_map.view;
+  entry.bindings.views[4] = comp.material.normal_map.view;
+  entry.bindings.views[5] = s_renderer.passes[RENDER_PASS_SHADOW].attachments[0];
+
+  entry.bindings.samplers[0] = comp.material.albedo_map.sampler;
+  entry.bindings.samplers[1] = comp.material.roughness_map.sampler;
+  entry.bindings.samplers[2] = comp.material.metallic_map.sampler;
+  entry.bindings.samplers[3] = comp.material.normal_map.sampler;
+  entry.bindings.samplers[4] = s_renderer.passes[RENDER_PASS_SHADOW].sampler;
+
+  // Setup the material 
+
+  entry.material = {
+    comp.material.color, 
+    comp.material.roughness, 
+    comp.material.metallic,
+  };
+
+  // Fill the rest of the entry
+
+  entry.model.u_index = (i32)queue.entries.size();
+
+  entry.elements_count  = comp.mesh.elements_count;
+  entry.instances_count = 1;
+
+  // Pushing into the queue
+
+  queue.transforms.emplace_back(comp.transform);
+  queue.entries.push_back(entry);
+
+  // Pushing to the shadow queue if possible 
+
+  if(comp.material.shadows_enabled) {
+    RenderQueue& shadow = s_renderer.queues[RENDER_QUEUE_SHADOW];
+    RenderQueueEntry shadow_entry; 
+
+    // Setup the the entry
+
+    shadow_entry.model.u_index = (i32)shadow.entries.size();
+
+    shadow_entry.bindings                   = {0};
+    shadow_entry.bindings.vertex_buffers[0] = comp.mesh.vertex_buffer; 
+    shadow_entry.bindings.index_buffer      = comp.mesh.index_buffer; 
+
+    shadow_entry.bindings.views[0] = shadow.transforms_view;
+
+    shadow_entry.elements_count  = comp.mesh.elements_count;
+    shadow_entry.instances_count = 1;
+
+    // Pushing into the queue
+
+    shadow.transforms.emplace_back(comp.transform);
+    shadow.entries.push_back(shadow_entry);
+  }
+}
+
+static void render_queue_mesh_instanced(RenderQueue& queue, MeshInstancedComponent& comp) {
+  RenderQueueEntry entry;
+
+  // Setup the bindings of the entry
+
+  entry.bindings.vertex_buffers[0] = comp.mesh.vertex_buffer; 
+  entry.bindings.index_buffer      = comp.mesh.index_buffer; 
+
+  entry.bindings.views[0] = queue.transforms_view;
+  entry.bindings.views[1] = comp.material.albedo_map.view;
+  entry.bindings.views[2] = comp.material.roughness_map.view;
+  entry.bindings.views[3] = comp.material.metallic_map.view;
+  entry.bindings.views[4] = comp.material.normal_map.view;
+  entry.bindings.views[5] = s_renderer.passes[RENDER_PASS_SHADOW].attachments[0];
+
+  entry.bindings.samplers[0] = comp.material.albedo_map.sampler;
+  entry.bindings.samplers[1] = comp.material.roughness_map.sampler;
+  entry.bindings.samplers[2] = comp.material.metallic_map.sampler;
+  entry.bindings.samplers[3] = comp.material.normal_map.sampler;
+  entry.bindings.samplers[4] = s_renderer.passes[RENDER_PASS_SHADOW].sampler;
+
+  // Setup the material 
+
+  entry.material = {
+    comp.material.color, 
+    comp.material.roughness, 
+    comp.material.metallic,
+  };
+
+  // Fill the rest of the entry
+
+  entry.model.u_index = (i32)queue.entries.size();
+
+  entry.elements_count  = comp.mesh.elements_count;
+  entry.instances_count = (u32)comp.transforms.size();
+
+  // Pushing into the queue
+
+  queue.transforms.insert(queue.transforms.end(), comp.transforms.begin(), comp.transforms.end());
+  queue.entries.push_back(entry);
+
+  // Pushing to the shadow queue if possible 
+
+  if(comp.material.shadows_enabled) {
+    RenderQueue& shadow = s_renderer.queues[RENDER_QUEUE_SHADOW];
+    RenderQueueEntry shadow_entry; 
+
+    // Setup the the entry
+
+    shadow_entry.model.u_index = (i32)shadow.entries.size();
+
+    shadow_entry.bindings                   = {0};
+    shadow_entry.bindings.vertex_buffers[0] = comp.mesh.vertex_buffer; 
+    shadow_entry.bindings.index_buffer      = comp.mesh.index_buffer; 
+
+    shadow_entry.bindings.views[0] = shadow.transforms_view;
+
+    shadow_entry.elements_count  = comp.mesh.elements_count;
+    shadow_entry.instances_count = (u32)comp.transforms.size();
+
+    // Pushing into the queue
+
+    shadow.transforms.insert(shadow.transforms.end(), comp.transforms.begin(), comp.transforms.end());
+    shadow.entries.push_back(shadow_entry);
+  }
+}
+
 /// Private functions
 ///---------------------------------------------------------------------------------------------------------------------
 
@@ -702,73 +836,13 @@ void renderer_prepare() {
   {
     auto view = world->view<MeshComponent>();
     for(auto& entt : view) {
+      // Get the important components
+
       MeshComponent& comp = view.get<MeshComponent>(entt);
-      RenderQueue& opaque = s_renderer.queues[RENDER_QUEUE_OPAQUE];
+      RenderQueue& queue  = s_renderer.queues[RENDER_QUEUE_OPAQUE];
 
-      RenderQueueEntry entry;
-       
-      // Setup the bindings of the entry
-
-      entry.bindings.vertex_buffers[0] = comp.mesh.vertex_buffer; 
-      entry.bindings.index_buffer      = comp.mesh.index_buffer; 
-
-      entry.bindings.views[0] = opaque.transforms_view;
-      entry.bindings.views[1] = comp.material.albedo_map.view;
-      entry.bindings.views[2] = comp.material.roughness_map.view;
-      entry.bindings.views[3] = comp.material.metallic_map.view;
-      entry.bindings.views[4] = comp.material.normal_map.view;
-      entry.bindings.views[5] = s_renderer.passes[RENDER_PASS_SHADOW].attachments[0];
-
-      entry.bindings.samplers[0] = comp.material.albedo_map.sampler;
-      entry.bindings.samplers[1] = comp.material.roughness_map.sampler;
-      entry.bindings.samplers[2] = comp.material.metallic_map.sampler;
-      entry.bindings.samplers[3] = comp.material.normal_map.sampler;
-      entry.bindings.samplers[4] = s_renderer.passes[RENDER_PASS_SHADOW].sampler;
-
-      // Setup the material 
-
-      entry.material = {
-        comp.material.color, 
-        comp.material.roughness, 
-        comp.material.metallic,
-      };
-
-      // Fill the rest of the entry
-      
-      entry.model.u_index = (i32)opaque.entries.size();
-
-      entry.elements_count  = comp.mesh.elements_count;
-      entry.instances_count = 1;
-
-      // Pushing into the queue
-      
-      opaque.transforms.emplace_back(comp.transform);
-      opaque.entries.push_back(entry);
-
-      // Pushing to the shadow queue if possible 
-
-      if(comp.material.shadows_enabled) {
-        RenderQueue& shadow = s_renderer.queues[RENDER_QUEUE_SHADOW];
-        RenderQueueEntry shadow_entry; 
-
-        // Setup the the entry
-
-        shadow_entry.model.u_index = (i32)shadow.entries.size();
-        
-        shadow_entry.bindings                   = {0};
-        shadow_entry.bindings.vertex_buffers[0] = comp.mesh.vertex_buffer; 
-        shadow_entry.bindings.index_buffer      = comp.mesh.index_buffer; 
-
-        shadow_entry.bindings.views[0] = shadow.transforms_view;
-
-        shadow_entry.elements_count  = comp.mesh.elements_count;
-        shadow_entry.instances_count = 1;
-
-        // Pushing into the queue
-        
-        shadow.transforms.emplace_back(comp.transform);
-        shadow.entries.push_back(shadow_entry);
-      }
+      // Queue the mesh 
+      render_queue_mesh(queue, comp);
     }
   }
 
@@ -778,72 +852,42 @@ void renderer_prepare() {
   {
     auto view = world->view<MeshInstancedComponent>();
     for(auto& entt : view) {
+      // Get the imporant components
+
       MeshInstancedComponent& comp = view.get<MeshInstancedComponent>(entt);
-      RenderQueue& opaque          = s_renderer.queues[RENDER_QUEUE_OPAQUE];
+      RenderQueue& queue           = s_renderer.queues[RENDER_QUEUE_OPAQUE];
 
-      RenderQueueEntry entry;
-      
-      // Setup the bindings of the entry
+      // Queue the instanced mesh
+      render_queue_mesh_instanced(queue, comp);
+    }
+  }
 
-      entry.bindings.vertex_buffers[0] = comp.mesh.vertex_buffer; 
-      entry.bindings.index_buffer      = comp.mesh.index_buffer; 
+  // 
+  // Models 
+  //
+  {
+    auto view = world->view<ModelComponent>();
+    for(auto& entt : view) {
+      // Get the imporant components
 
-      entry.bindings.views[0] = opaque.transforms_view;
-      entry.bindings.views[1] = comp.material.albedo_map.view;
-      entry.bindings.views[2] = comp.material.roughness_map.view;
-      entry.bindings.views[3] = comp.material.metallic_map.view;
-      entry.bindings.views[4] = comp.material.normal_map.view;
-      entry.bindings.views[5] = s_renderer.passes[RENDER_PASS_SHADOW].attachments[0];
+      ModelComponent& comp = view.get<ModelComponent>(entt);
+      RenderQueue& queue   = s_renderer.queues[RENDER_QUEUE_OPAQUE];
 
-      entry.bindings.samplers[0] = comp.material.albedo_map.sampler;
-      entry.bindings.samplers[1] = comp.material.roughness_map.sampler;
-      entry.bindings.samplers[2] = comp.material.metallic_map.sampler;
-      entry.bindings.samplers[3] = comp.material.normal_map.sampler;
-      entry.bindings.samplers[4] = s_renderer.passes[RENDER_PASS_SHADOW].sampler;
+      // Queue the model
 
-      // Setup the material 
+      for(sizei i = 0; i < comp.model->meshes.size(); i++) {
+        // Get the required material index
+        i8 mat_index = comp.model->material_remaps[i];
 
-      entry.material = {
-        comp.material.color, 
-        comp.material.roughness, 
-        comp.material.metallic,
-      };
+        // Queue the mesh
 
-      // Fill the rest of the entry
-      
-      entry.model.u_index = (i32)opaque.entries.size();
+        MeshComponent mesh_comp = {
+          .mesh     = comp.model->meshes[i], 
+          .material = comp.model->materials[mat_index],
 
-      entry.elements_count  = comp.mesh.elements_count;
-      entry.instances_count = (u32)comp.transforms.size();
-
-      // Pushing into the queue
-      
-      opaque.transforms.insert(opaque.transforms.end(), comp.transforms.begin(), comp.transforms.end());
-      opaque.entries.push_back(entry);
-
-      // Pushing to the shadow queue if possible 
-
-      if(comp.material.shadows_enabled) {
-        RenderQueue& shadow = s_renderer.queues[RENDER_QUEUE_SHADOW];
-        RenderQueueEntry shadow_entry; 
-
-        // Setup the the entry
-
-        shadow_entry.model.u_index = (i32)shadow.entries.size();
-        
-        shadow_entry.bindings                   = {0};
-        shadow_entry.bindings.vertex_buffers[0] = comp.mesh.vertex_buffer; 
-        shadow_entry.bindings.index_buffer      = comp.mesh.index_buffer; 
-      
-        shadow_entry.bindings.views[0] = shadow.transforms_view;
-
-        shadow_entry.elements_count  = comp.mesh.elements_count;
-        shadow_entry.instances_count = (u32)comp.transforms.size();
-
-        // Pushing into the queue
-        
-        shadow.transforms.insert(shadow.transforms.end(), comp.transforms.begin(), comp.transforms.end());
-        shadow.entries.push_back(shadow_entry);
+          .transform = comp.transform,
+        };
+        render_queue_mesh(queue, mesh_comp);
       }
     }
   }

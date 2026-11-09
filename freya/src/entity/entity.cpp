@@ -120,11 +120,23 @@ void entity_world_update(EntityWorld& world, const f32 delta_time) {
 
     auto view = world.view<MeshComponent, Transform>();
     for(auto entt : view) {
-      MeshComponent& mesh  = view.get<MeshComponent>(entt);
-      Transform& transform = view.get<Transform>(entt); 
-
       // @TODO (Mesh/better system than this)
-      mesh.transform = transform_apply(transform);
+      
+      MeshComponent& mesh = view.get<MeshComponent>(entt);
+      mesh.transform      = transform_apply(view.get<Transform>(entt));
+    }
+  }
+  
+  // Model
+  {
+    FREYA_PROFILE_FUNCTION_NAMED("entity_world_update(ModelComponent)");
+
+    auto view = world.view<ModelComponent, Transform>();
+    for(auto entt : view) {
+      // @TODO (Model/better system than this)
+      
+      ModelComponent& model = view.get<ModelComponent>(entt);
+      model.transform       = transform_apply(view.get<Transform>(entt));
     }
   }
 }
@@ -295,6 +307,10 @@ MeshInstancedComponent& entity_add_mesh_instanced(EntityWorld& world,
                                       entt, 
                                       asset_group_get_mesh(mesh_id), 
                                       (material_id.is_valid() ? asset_group_get_material(material_id) : default_mat));
+}
+
+ModelComponent& entity_add_model(EntityWorld& world, EntityID& entt, const AssetID& model_id) {
+  return world.emplace<ModelComponent>(entt, asset_group_get_model(model_id));
 }
 
 BillboardComponent& entity_add_billboard(EntityWorld& world, 

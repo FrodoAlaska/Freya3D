@@ -10,10 +10,6 @@
 
 ## Immediate 
 
-- 3D Models (loading and rendering)
-    - Model component
-    - Render the 3D model
-
 - Physics 
     - Either Box3D or Jolt... I'm not sure yet...
 
