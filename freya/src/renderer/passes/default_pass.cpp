@@ -7,7 +7,7 @@ namespace freya { // Start of freya
 ///---------------------------------------------------------------------------------------------------------------------
 /// Default pass functions
 
-void default_pass_commit(RenderPass& pass, RenderQueue& queue, Window* window) {
+void default_pass_commit(RenderPass& pass, RenderQueue& queue, Window* window, const FrameData_t& data) {
   // Set up the swapchain 
 
   const Color& color = renderer_get_clear_color(); 
@@ -33,8 +33,11 @@ void default_pass_commit(RenderPass& pass, RenderQueue& queue, Window* window) {
   // Draw the final image
   //
 
-  // Flush the default queue
+  // Flush the default queue  
   sg_apply_pipeline(queue.pipeline); 
+
+  // Apply the global uniforms 
+  sg_apply_uniforms(SHADER_BINDING_FRAME_DATA, SG_RANGE(data));
 
   // Render each entry
 

@@ -129,7 +129,7 @@ void geometry_pass_commit(RenderPass& pass, const GeometryPassData& data);
 ///---------------------------------------------------------------------------------------------------------------------
 /// Default pass functions
 
-void default_pass_commit(RenderPass& pass, RenderQueue& queue, Window* window);
+void default_pass_commit(RenderPass& pass, RenderQueue& queue, Window* window, const FrameData_t& data);
 
 /// Default pass functions
 ///---------------------------------------------------------------------------------------------------------------------

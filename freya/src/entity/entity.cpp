@@ -207,7 +207,8 @@ Camera& entity_add_camera(EntityWorld& world, EntityID& entt, const CameraDesc& 
   Transform& transform = world.get<Transform>(entt);
   Camera& camera       = world.emplace<Camera>(entt); 
   
-  camera.fov = desc.fov;
+  camera.fov      = desc.fov;
+  camera.exposure = desc.exposure;
 
   camera.near_plane = desc.near_plane;
   camera.far_plane  = desc.far_plane;

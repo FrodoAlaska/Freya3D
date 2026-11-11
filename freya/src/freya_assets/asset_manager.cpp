@@ -798,7 +798,6 @@ AssetID asset_group_push_texture(const AssetGroupID& group_id, const MaterialTex
   img_desc.height = 16;
 
   u32 channels = 4;
-
   u8 pixels[1024]; // width (16) * height (16) * channels (4)
 
   switch(type) {

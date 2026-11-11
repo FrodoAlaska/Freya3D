@@ -47,6 +47,11 @@ struct CameraDesc {
   ///
   /// @NOTE: This is set to `45.0f` by default.
   f32 fov        = 45.0f;
+
+  /// The exposure value of the camera. 
+  ///
+  /// @NOTE: This is set to `1.0f` by default.
+  f32 exposure   = 1.0f;
 };
 /// CameraDesc
 ///---------------------------------------------------------------------------------------------------------------------
@@ -55,6 +60,7 @@ struct CameraDesc {
 /// Camera 
 struct Camera {
   f32 fov;
+  f32 exposure;
 
   f32 near_plane; 
   f32 far_plane;

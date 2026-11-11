@@ -7,8 +7,14 @@
 - Particles (CPU, but GPU-based is going to be better) 
 - Frustrum culling 
 - Global illumination
+- Post-process effects (bloom, blur, etc...)
+- Emissive textures (remember to convert them from sRGB)
 
 ## Immediate 
+
+- Wouldn't be better if we looped over the mesh components with the transforms in the renderer rather than attaching the transform into the component itself and having to update the transform every frame in the entity world?
+
+- Maybe we should just use an sRGB format for color textures instead of decoding and encoding the values in the shader?
 
 - Physics 
     - Either Box3D or Jolt... I'm not sure yet...
@@ -27,7 +33,6 @@
 
 - Renderer
     - IBL (Image-Based Lighting)
-    - HDR colors and exposure
     - We should think about the vertex situation. Should we have one unifying vertex type or multiple???
     - Implement acceleration spatial structures to improve the renderer's performance
 

@@ -347,7 +347,7 @@ static void init_queues() {
     pipe_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT3; // Tangant
     pipe_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT2; // Texture coords
    
-    pipe_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA32F;
+    pipe_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA16F;
     pipe_desc.index_type             = SG_INDEXTYPE_UINT16;
 
     queue.pipeline = sg_make_pipeline(pipe_desc);
@@ -396,7 +396,7 @@ static void init_queues() {
     pipe_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT3; // Normal
     pipe_desc.layout.attrs[2].format = SG_VERTEXFORMAT_FLOAT2; // Texture coords
     
-    pipe_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA32F;
+    pipe_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA16F;
     
     pipe_desc.index_type                = SG_INDEXTYPE_UINT16;
     pipe_desc.alpha_to_coverage_enabled = true;
@@ -456,7 +456,7 @@ static void init_queues() {
     pipe_desc.shader       = asset_group_get_shader(s_renderer.shaders[SHADER_SKYBOX]); 
     pipe_desc.sample_count = window_get_samples_count(s_renderer.window);
     
-    pipe_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA32F;
+    pipe_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA16F;
 
     pipe_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT3; // Position
     pipe_desc.index_type             = SG_INDEXTYPE_UINT16;
@@ -661,6 +661,7 @@ void renderer_init(Window* window) {
   
   s_renderer.frame_data.u_ambient_color = Vec3(1.0f);
   s_renderer.frame_data.u_gamma         = 2.2f;
+  s_renderer.frame_data.u_exposure      = 1.0f;
 
   s_renderer.dir_light.direction = Vec3(0.0f);
   s_renderer.dir_light.color     = Vec3(1.0f);
@@ -765,6 +766,7 @@ void renderer_prepare() {
   if(main_cam) {
     s_renderer.frame_data.u_view       = main_cam->view;
     s_renderer.frame_data.u_camera_pos = main_cam->position;
+    s_renderer.frame_data.u_exposure   = main_cam->exposure;
 
     s_renderer.frame_data.u_projection = mat4_perspective(main_cam->fov * DEG2RAD, 
                                                           window_get_aspect_ratio(s_renderer.window),
@@ -992,7 +994,11 @@ void renderer_commit() {
   geometry_pass_commit(s_renderer.passes[RENDER_PASS_GEOMETRY], geo_data);
   
   // Default...
-  default_pass_commit(s_renderer.passes[RENDER_PASS_DEFAULT], s_renderer.queues[RENDER_QUEUE_SCREEN_SPACE], s_renderer.window);
+  
+  default_pass_commit(s_renderer.passes[RENDER_PASS_DEFAULT], 
+                      s_renderer.queues[RENDER_QUEUE_SCREEN_SPACE], 
+                      s_renderer.window, 
+                      s_renderer.frame_data);
 
   // Done with this frame... 
   sg_commit();
@@ -1012,6 +1018,7 @@ void renderer_commit() {
   s_renderer.frame_data.u_view       = Mat4(1.0f);
   s_renderer.frame_data.u_projection = Mat4(1.0f);
   s_renderer.frame_data.u_camera_pos = Vec3(0.0f);
+  s_renderer.frame_data.u_exposure   = 1.0f;
 
   s_renderer.point_lights.count = 0;
   

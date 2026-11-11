@@ -87,7 +87,7 @@ bool cubemap_loader_load(CubemapLoader& out_loader, const freya::FilePath& path)
   //
 
   out_loader.image_desc.type         = SG_IMAGETYPE_CUBE;
-  out_loader.image_desc.pixel_format = SG_PIXELFORMAT_RGBA8;
+  out_loader.image_desc.pixel_format = SG_PIXELFORMAT_SRGB8A8;
   out_loader.image_desc.width        = width;
   out_loader.image_desc.height       = height;
   
