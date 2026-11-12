@@ -70,7 +70,7 @@ bool app_init(const freya::Args& args, freya::Window* window) {
                                       20.0f, 
                                       0.1f);
 
-  freya::entity_add_directional_light(s_app.world, s_app.camera_entt, freya::Vec3(0.2f, -.180f, 0.0f));
+  freya::entity_add_directional_light(s_app.world, s_app.camera_entt, freya::Vec3(0.2f, -0.180f, 0.0f));
   freya::entity_add_skybox(s_app.world, 
                            s_app.camera_entt, 
                            freya::asset_group_get_id(s_app.group_id, "corona"), 

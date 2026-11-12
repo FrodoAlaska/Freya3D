@@ -2,13 +2,21 @@
 
 ## Features We Definitely Need
 
-- Decals 
-- Shadows 
-- Particles (CPU, but GPU-based is going to be better) 
-- Frustrum culling 
-- Global illumination
-- Post-process effects (bloom, blur, etc...)
-- Emissive textures (remember to convert them from sRGB)
+- Physics 
+    - [] Box3D or Jolt?
+
+- Animations 
+    - [] Do we implement 3D skeletal animations, or just use billboards for now?
+
+- Renderer
+    - [] Shadows 
+    - [] Post-process effects (bloom, blur, etc...)
+    - [] Emissive textures (remember to convert them from sRGB)
+    - [] IBL (Image-Based Lighting)
+    - [] Decals 
+    - [] Particles (CPU, but GPU-based is going to be better) 
+    - [] Frustrum culling (and maybe look into acceleration spatial structures)
+    - [] Global illumination
 
 ## Immediate 
 
@@ -32,9 +40,7 @@
     - They are shit. Fix 'em 
 
 - Renderer
-    - IBL (Image-Based Lighting)
     - We should think about the vertex situation. Should we have one unifying vertex type or multiple???
-    - Implement acceleration spatial structures to improve the renderer's performance
 
 - 2D UI
     - Maybe have a completely seperate renderer to handle the 2D stuff 

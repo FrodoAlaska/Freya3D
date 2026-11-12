@@ -1,6 +1,8 @@
 # The Freya Game Engine
 
-A 3D game engine inspired by the games of the early 2000s. What does that mean? I don't know. Leave me alone.
+A 3D game engine inspired by the games of the early 2000s. What does that mean? I don't know. Leave me alone. I'm just having fun creating this.
+
+Built on the ruins of my [2D game engine](https://github.com/FrodoAlaska/Freya)
 
 ## Dependencies:
 
@@ -106,6 +108,10 @@ bool app_init(const freya::Args& args, freya::Window* window) {
   
   // Initialize the GUI
   freya::gui_init(window);
+
+  // Give our entity world to the renderer so that it can process any rendering 
+  // commands that gets issued from the application. 
+  freya::renderer_sumbit_world(&s_app.world);
   
   // Create the application's asset group
   s_app.group_id = freya::asset_group_create("app_assets");
@@ -129,13 +135,75 @@ bool app_init(const freya::Args& args, freya::Window* window) {
   //
   freya::asset_group_load_package(s_app.group_id, "assets.frpkg");
 
-  // Give our entity world to the renderer so that it can process any rendering 
-  // commands that gets issued from the application. 
-  freya::renderer_sumbit_world(&s_app.world);
-
   //
   // Create entities or do other initialization stuff here...
   //
+
+  // Camera
+  {
+    // Create the camera entity 
+
+    freya::EntityID camera_entt = freya::entity_create(s_app.world, freya::Vec3(10.0f, 0.0f, 10.0f));
+    freya::entity_add_tag(s_app.world, camera_entt, "Camera");
+    
+    freya::CameraDesc cam_desc = {
+        .near_plane = 0.1f, 
+        .far_plane  = 100.0f, 
+
+        .fov      = 45.0f, 
+        .exposure = 1.0f,
+    };
+    freya::entity_add_camera(s_app.world, camera_entt, cam_desc);
+
+    // Add a camera controller 
+
+    freya::entity_add_camera_controller(s_app.world,                   // The entity world
+                                        camera_entt,                   // The entity to attach this component to
+                                        freya::CAMERA_CONTROLLER_FREE, // The type of the controller (found in `freya_camera.h`)
+                                        20.0f,                         // Speed
+                                        0.1f);                         // Sensitivity
+ 
+    // Add a directional light
+    freya::entity_add_directional_light(s_app.world, camera_entt, freya::Vec3(0.2f, -0.180f, 0.0f));
+  }
+
+  // Mesh 
+  {
+    // Create a cube mesh asset
+    freya::AssetID mesh_id = freya::asset_group_push_mesh(s_app.group_id, freya::MESH_CUBE);
+  
+    // Create material asset
+    // @NOTE: All of the values inside `MaterialDesc` have default values, so you don't have 
+    // to manually set each one, but this is done here for demonstration purposes.
+
+    freya::MaterialDesc mat_desc = {
+        .name = "entity_material", 
+
+        .albedo_id    = freya::asset_group_get_id(s_app.group_id, "texture_BaseColor"),
+        .roughness_id = freya::asset_group_get_id(s_app.group_id, "texture_Roughness"),
+        .metallic_id  = freya::asset_group_get_id(s_app.group_id, "texture_Metallic"),
+        .normal_id    = freya::asset_group_get_id(s_app.group_id, "texture_Normal"),
+
+        .color = freya::Color(1.0f), 
+        
+        .roughness = 1.0f, 
+        .metallic  = 0.0f, 
+
+        .shadows_enabled = true,
+    };
+    freya::AssetID material_id = freya::asset_group_push_material(s_app.group_id, mat_desc);
+
+    // Create the mesh entity 
+  
+    freya::Vec3 position = freya::Vec3(10.0f, 0.0f, 10.0f);
+    freya::Vec3 scale    = freya::Vec3(0.1f);
+    freya::Quat rotation = freya::quat_angle_axis(freya::Vec3(1.0f, 0.0f, 0.0f), FREYA_TO_RADIANS(0.0f));
+
+    freya::EntityID mesh_entt = freya::entity_create(s_app.world, position, scale, rotation);
+    
+    freya::entity_add_mesh(s_app.world, mesh_entt, mesh_id);
+    freya::entity_add_tag(s_app.world, mesh_entt, "Mesh");
+  }
 
   // Nothing went wrong. Return true.
   return true;
