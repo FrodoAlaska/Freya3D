@@ -57,60 +57,77 @@ bool app_init(const freya::Args& args, freya::Window* window) {
   freya::AssetID material_id = freya::asset_group_push_material(s_app.group_id, mat_desc);
 
   // Camera entity init
+  {
+    freya::EntityDesc entt_desc = {
+      .position = freya::Vec3(10.0f, 0.0f, 10.0f),
+      .tag      = "Camera",
+    };
+    s_app.camera_entt = freya::entity_create(s_app.world, entt_desc);
 
-  s_app.camera_entt = freya::entity_create(s_app.world, freya::Vec3(10.0f, 0.0f, 10.0f));
+    freya::CameraDesc cam_desc = {
+    };
+    freya::entity_add_camera(s_app.world, s_app.camera_entt, cam_desc);
 
-  freya::CameraDesc cam_desc = {
-  };
-  freya::entity_add_camera(s_app.world, s_app.camera_entt, cam_desc);
+    freya::entity_add_camera_controller(s_app.world, 
+                                        s_app.camera_entt,
+                                        freya::CAMERA_CONTROLLER_FREE, 
+                                        20.0f, 
+                                        0.1f);
 
-  freya::entity_add_camera_controller(s_app.world, 
-                                      s_app.camera_entt,
-                                      freya::CAMERA_CONTROLLER_FREE, 
-                                      20.0f, 
-                                      0.1f);
-
-  freya::entity_add_directional_light(s_app.world, s_app.camera_entt, freya::Vec3(0.2f, -0.180f, 0.0f));
-  freya::entity_add_skybox(s_app.world, 
-                           s_app.camera_entt, 
-                           freya::asset_group_get_id(s_app.group_id, "corona"), 
-                           freya::Vec3(0.025f));
+    freya::entity_add_directional_light(s_app.world, s_app.camera_entt, freya::Vec3(0.2f, -0.180f, 0.0f));
+    freya::entity_add_skybox(s_app.world, 
+                             s_app.camera_entt, 
+                             freya::asset_group_get_id(s_app.group_id, "corona"), 
+                             freya::Vec3(0.025f));
+  }
 
   // Model init
+  {
+    freya::EntityDesc entt_desc = {
+      .position = freya::Vec3(10.0f, 0.0f, 10.0f),
+      .rotation = freya::quat_angle_axis(freya::Vec3(1.0f, 0.0f, 0.0f), FREYA_TO_RADIANS(0.0f)),
+      .scale    = freya::Vec3(0.1f),
 
-  freya::Vec3 position = freya::Vec3(10.0f, 0.0f, 10.0f);
-  freya::Vec3 scale    = freya::Vec3(0.1f);
-  freya::Quat rotation = freya::quat_angle_axis(freya::Vec3(1.0f, 0.0f, 0.0f), FREYA_TO_RADIANS(0.0f));
+      .tag = "Model",
+    };
 
-  freya::EntityID model_entt = freya::entity_create(s_app.world, position, scale, rotation); 
-  
-  freya::entity_add_model(s_app.world, model_entt, freya::asset_group_get_id(s_app.group_id, "behelit"));
-  freya::entity_add_tag(s_app.world, model_entt, "Model");
+    freya::EntityID model_entt = freya::entity_create(s_app.world, entt_desc);
+    freya::entity_add_model(s_app.world, model_entt, freya::asset_group_get_id(s_app.group_id, "behelit"));
+  }
 
   // Point light init
-  
-  // freya::EntityID point_light = freya::entity_create(s_app.world, freya::Vec3(10.0f, 0.0f, 10.0f)); 
-  //
-  // freya::entity_add_tag(s_app.world, point_light, "Point Light");
-  // freya::entity_add_point_light(s_app.world, point_light);
+  {
+    // freya::EntityDesc entt_desc = {
+    //   .position = freya::Vec3(10.0f, 0.0f, 10.0f);
+    //   .tag      = "Point light",
+    // };
+    //
+    // freya::EntityID point_light = freya::entity_create(s_app.world, entt_desc);
+    // freya::entity_add_point_light(s_app.world, point_light);
+  } 
 
   // Ground init
+  {
+    mesh_id = freya::asset_group_push_mesh(s_app.group_id, freya::MESH_CUBE);
 
-  mesh_id = freya::asset_group_push_mesh(s_app.group_id, freya::MESH_CUBE);
-  
-  mat_desc = {
-    .name = "ground_material", 
+    mat_desc = {
+      .name = "ground_material", 
 
-    .albedo_id = freya::asset_group_get_id(s_app.group_id, "brickwall"),
-    .normal_id = freya::asset_group_get_id(s_app.group_id, "brickwall_normal"),
-  };
-  material_id = freya::asset_group_push_material(s_app.group_id, mat_desc);
-  
-  freya::EntityID ground_entt = freya::entity_create(s_app.world, freya::Vec3(10.0f, -1.0f, 10.0f), 
-                                                                  freya::Vec3(12.0f, 0.1f, 12.0f)); 
-  
-  freya::entity_add_mesh(s_app.world, ground_entt, mesh_id, material_id);
-  freya::entity_add_tag(s_app.world, ground_entt, "Ground");
+      .albedo_id = freya::asset_group_get_id(s_app.group_id, "brickwall"),
+      .normal_id = freya::asset_group_get_id(s_app.group_id, "brickwall_normal"),
+    };
+    material_id = freya::asset_group_push_material(s_app.group_id, mat_desc);
+
+    freya::EntityDesc entt_desc = {
+      .position = freya::Vec3(10.0f, -1.0f, 10.0f),
+      .scale    = freya::Vec3(12, 0.1f, 12.0f),
+
+      .tag = "Ground",
+    };
+
+    freya::EntityID ground_entt = freya::entity_create(s_app.world, entt_desc); 
+    freya::entity_add_mesh(s_app.world, ground_entt, mesh_id, material_id);
+  }
 
   // Done!
   return true;

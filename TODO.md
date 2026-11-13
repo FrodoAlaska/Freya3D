@@ -29,6 +29,9 @@
 - Camera 
     - Improve the camera's controller to make it more general a little bit more. Look into the camera controller functions and you'll understand what needs to be fixed.
 
+- Entity/scenes 
+    - Meshes and models should have the loaded names from the disk
+
 - Transforms 
     - Maybe we need to represent transforms differently. 
     - Instead of quats on the front end, we just use simple euler angles, and then calculate quats on the backend.

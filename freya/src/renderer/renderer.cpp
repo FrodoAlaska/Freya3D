@@ -467,10 +467,13 @@ static void init_queues() {
   FREYA_LOG_TRACE("Render queues initialized");
 }
 
-static void render_queue_mesh(RenderQueue& queue, MeshComponent& comp) {
-  RenderQueueEntry entry;
+static void render_queue_mesh(RenderQueue& queue, Camera& camera, MeshComponent& comp, SceneComponent& scene) {
+  // @TODO (Renderer/frustum culling):
+  // Do some frustum culling here...
 
   // Setup the bindings of the entry
+  
+  RenderQueueEntry entry;
 
   entry.bindings.vertex_buffers[0] = comp.mesh.vertex_buffer; 
   entry.bindings.index_buffer      = comp.mesh.index_buffer; 
@@ -505,7 +508,7 @@ static void render_queue_mesh(RenderQueue& queue, MeshComponent& comp) {
 
   // Pushing into the queue
 
-  queue.transforms.emplace_back(comp.transform);
+  queue.transforms.emplace_back(scene.transform);
   queue.entries.push_back(entry);
 
   // Pushing to the shadow queue if possible 
@@ -529,15 +532,15 @@ static void render_queue_mesh(RenderQueue& queue, MeshComponent& comp) {
 
     // Pushing into the queue
 
-    shadow.transforms.emplace_back(comp.transform);
+    shadow.transforms.emplace_back(scene.transform);
     shadow.entries.push_back(shadow_entry);
   }
 }
 
 static void render_queue_mesh_instanced(RenderQueue& queue, MeshInstancedComponent& comp) {
-  RenderQueueEntry entry;
-
   // Setup the bindings of the entry
+  
+  RenderQueueEntry entry;
 
   entry.bindings.vertex_buffers[0] = comp.mesh.vertex_buffer; 
   entry.bindings.index_buffer      = comp.mesh.index_buffer; 
@@ -849,15 +852,17 @@ void renderer_prepare() {
 
   // Meshes
   {
-    auto view = world->view<MeshComponent>();
+    auto view = world->view<SceneComponent, MeshComponent>();
     for(auto& entt : view) {
       // Get the important components
 
-      MeshComponent& comp = view.get<MeshComponent>(entt);
-      RenderQueue& queue  = s_renderer.queues[RENDER_QUEUE_OPAQUE];
+      MeshComponent& mesh   = view.get<MeshComponent>(entt);
+      SceneComponent& scene = view.get<SceneComponent>(entt); 
+
+      RenderQueue& queue = s_renderer.queues[RENDER_QUEUE_OPAQUE];
 
       // Queue the mesh 
-      render_queue_mesh(queue, comp);
+      render_queue_mesh(queue, *main_cam, mesh, scene);
     }
   }
 
@@ -878,47 +883,18 @@ void renderer_prepare() {
   }
 
   // 
-  // Models 
-  //
-  {
-    auto view = world->view<ModelComponent>();
-    for(auto& entt : view) {
-      // Get the imporant components
-
-      ModelComponent& comp = view.get<ModelComponent>(entt);
-      RenderQueue& queue   = s_renderer.queues[RENDER_QUEUE_OPAQUE];
-
-      // Queue the model
-
-      for(sizei i = 0; i < comp.model->meshes.size(); i++) {
-        // Get the required material index
-        i8 mat_index = comp.model->material_remaps[i];
-
-        // Queue the mesh
-
-        MeshComponent mesh_comp = {
-          .mesh     = comp.model->meshes[i], 
-          .material = comp.model->materials[mat_index],
-
-          .transform = comp.transform,
-        };
-        render_queue_mesh(queue, mesh_comp);
-      }
-    }
-  }
-
-  // 
   // Billboard
   //
   {
-    auto view = world->view<BillboardComponent>();
+    auto view = world->view<SceneComponent, BillboardComponent>();
     for(auto& entt : view) {
       // Retrieve the imporant components
 
       BillboardComponent& comp = view.get<BillboardComponent>(entt);
-      RenderQueue& billboard   = s_renderer.queues[RENDER_QUEUE_BILLBOARD];
-
-      RenderQueueEntry entry;
+      SceneComponent& scene    = view.get<SceneComponent>(entt);
+      
+      RenderQueue& billboard = s_renderer.queues[RENDER_QUEUE_BILLBOARD];
+      RenderQueueEntry entry = {};
 
       // Setup the bindings 
 
@@ -941,7 +917,7 @@ void renderer_prepare() {
      
       // Pushing into the queue
       
-      billboard.transforms.emplace_back(comp.transform);
+      billboard.transforms.emplace_back(scene.transform);
       billboard.entries.push_back(entry);
     }
   }

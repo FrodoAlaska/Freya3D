@@ -91,6 +91,9 @@ struct CameraController {
 /// Create and setup the given `out_camera` using the information given in `desc`.
 FREYA_API void camera_create(Camera& out_camera, const CameraDesc& desc);
 
+/// Check if the given `bounds` is inside the frustum of `camera`. 
+FREYA_API bool camera_check_bounds(const Camera& camera, const BoundingBox& bounds);
+
 /// Camera functions
 ///---------------------------------------------------------------------------------------------------------------------
 

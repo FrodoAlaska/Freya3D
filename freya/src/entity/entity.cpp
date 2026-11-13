@@ -27,6 +27,48 @@ void entity_world_clear(EntityWorld& world) {
 
 void entity_world_update(EntityWorld& world, const f32 delta_time) {
   FREYA_PROFILE_FUNCTION();
+
+  // SceneComponent
+  {
+    FREYA_PROFILE_FUNCTION_NAMED("entity_world_update(SceneComponent)");
+
+    auto view = world.view<SceneComponent, Transform>();
+    for(auto entt : view) {
+      // Get the required components
+
+      SceneComponent& scene = view.get<SceneComponent>(entt); 
+      Transform& transform  = view.get<Transform>(entt);
+      
+      bool can_update = false;
+      bool has_parent = false;
+
+      // Decide when exactly to update the transform and how to update it 
+      // depending if the entity has a parent or not
+
+      if(scene.parent != ENTITY_NULL) {
+        Transform& parent_transform = view.get<Transform>(scene.parent);
+
+        can_update = (parent_transform._is_dirty || transform._is_dirty);
+        has_parent = true;
+      }
+      else {
+        can_update = transform._is_dirty;
+      }
+
+      // Update the transform if it's needed
+
+      if(!can_update) {
+        continue;
+      }
+
+      if(has_parent) {
+        scene.transform = world.get<SceneComponent>(scene.parent).transform * transform_apply(transform);
+      }
+      else {
+        scene.transform = transform_apply(transform);
+      }
+    }
+  } 
   
   // Timers
   {
@@ -113,40 +155,6 @@ void entity_world_update(EntityWorld& world, const f32 delta_time) {
       light.position = transform._position;
     }
   }
-  
-  // Mesh
-  {
-    FREYA_PROFILE_FUNCTION_NAMED("entity_world_update(MeshComponent)");
-
-    auto view = world.view<MeshComponent, Transform>();
-    for(auto entt : view) {
-      MeshComponent& mesh  = view.get<MeshComponent>(entt);
-      Transform& transform = view.get<Transform>(entt);
-      
-      // Only update the transform when necessary
-
-      if(transform._is_dirty) {
-        mesh.transform = transform_apply(transform);
-      }
-    }
-  }
-  
-  // Model
-  {
-    FREYA_PROFILE_FUNCTION_NAMED("entity_world_update(ModelComponent)");
-
-    auto view = world.view<ModelComponent, Transform>();
-    for(auto entt : view) {
-      ModelComponent& model = view.get<ModelComponent>(entt);
-      Transform& transform  = view.get<Transform>(entt);
-      
-      // Only update the transform when necessary
-
-      if(transform._is_dirty) {
-        model.transform = transform_apply(transform);
-      }
-    }
-  }
 }
 
 /// EntityWorld functions
@@ -155,21 +163,29 @@ void entity_world_update(EntityWorld& world, const f32 delta_time) {
 /// ----------------------------------------------------------------------
 /// EntityID functions
 
-EntityID entity_create(EntityWorld& world,
-                       const Vec3& position, 
-                       const Vec3& scale,
-                       const Quat& rotation) {
+EntityID entity_create(EntityWorld& world, const EntityDesc& desc) {
   // Generate an entity ID
   EntityID entt_id = world.create();
 
   // Add a transform component  
 
-  Transform transform; 
-  transform_translate(transform, position); 
-  transform_scale(transform, scale);
-  transform_rotate(transform, rotation); 
+  Transform& transform = entity_add_component<Transform>(world, entt_id); 
+  transform_translate(transform, desc.position); 
+  transform_rotate(transform, desc.rotation); 
+  transform_scale(transform, desc.scale);
 
-  world.emplace<Transform>(entt_id, transform);
+  // Add the main scene component 
+  
+  SceneComponent& scene = entity_add_component<SceneComponent>(world, entt_id);
+  scene.tag             = desc.tag; 
+  scene.parent          = desc.parent;
+
+  if(scene.parent == ENTITY_NULL) {
+    scene.transform = transform_apply(transform);
+  }
+  else {
+    scene.transform = world.get<SceneComponent>(scene.parent).transform * scene.transform;
+  }
 
   // Dispatch an event
 
@@ -240,10 +256,6 @@ NoiseGenerator* entity_add_noise_generator(EntityWorld& world, EntityID& entt, c
   return world.emplace<NoiseGenerator*>(entt, gen);
 }
 
-TagComponent& entity_add_tag(EntityWorld& world, EntityID& entt, const String& tag) {
-  return world.emplace<TagComponent>(entt, tag);
-}
-
 TimerComponent& entity_add_timer(EntityWorld& world, 
                                  EntityID& entt, 
                                  const TimerDesc& desc, 
@@ -289,13 +301,10 @@ MeshComponent& entity_add_mesh(EntityWorld& world,
                                EntityID& entt, 
                                const AssetID& mesh_id, 
                                const AssetID& material_id) {
-  Transform& transform        = world.get<Transform>(entt);
   const Material& default_mat = renderer_get_defaults().material; 
-
   return world.emplace<MeshComponent>(entt, 
                                       asset_group_get_mesh(mesh_id), 
-                                      (material_id.is_valid() ? asset_group_get_material(material_id) : default_mat), 
-                                      transform_apply(transform));
+                                      (material_id.is_valid() ? asset_group_get_material(material_id) : default_mat));
 }
 
 MeshInstancedComponent& entity_add_mesh_instanced(EntityWorld& world, 
@@ -310,14 +319,40 @@ MeshInstancedComponent& entity_add_mesh_instanced(EntityWorld& world,
 }
 
 ModelComponent& entity_add_model(EntityWorld& world, EntityID& entt, const AssetID& model_id) {
-  return world.emplace<ModelComponent>(entt, asset_group_get_model(model_id));
+  // Queue each mesh entity
+
+  Model* model         = asset_group_get_model(model_id);
+  Transform& transform = entity_get_component<Transform>(world, entt); 
+
+  DynamicArray<EntityID> meshes;
+  meshes.reserve(model->meshes.size());
+
+  for(sizei i = 0; i < model->meshes.size(); i++) {
+    // Get the required material index
+    i8 mat_index = model->material_remaps[i];
+
+    // Create the entity 
+
+    EntityDesc entt_desc = {
+      .tag    = "Mesh", 
+      .parent = entt, 
+    };
+    EntityID mesh_entt = entity_create(world, entt_desc);
+
+    // Add the mesh component
+    world.emplace<MeshComponent>(mesh_entt, model->meshes[i], model->materials[mat_index]); 
+
+    // Add the mesh entity to the model 
+    meshes.emplace_back(mesh_entt); 
+  }
+
+  // Done!
+  return world.emplace<ModelComponent>(entt, model, meshes);
 }
 
 BillboardComponent& entity_add_billboard(EntityWorld& world, 
                                          EntityID& entt, 
                                          const AssetID& texture_id) {
-  Transform& transform = world.get<Transform>(entt);
-  
   // Get the correct texture
 
   Texture texture = {};
@@ -326,7 +361,7 @@ BillboardComponent& entity_add_billboard(EntityWorld& world,
   }
   
   // Done!
-  return world.emplace<BillboardComponent>(entt, texture, transform_apply(transform));
+  return world.emplace<BillboardComponent>(entt, texture);
 }
 
 /// EntityID functions

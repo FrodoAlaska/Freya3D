@@ -102,6 +102,45 @@ void camera_create(Camera& out_camera, const CameraDesc& desc) {
   update_camera_frustums(out_camera);
 }
 
+bool camera_check_bounds(const Camera& camera, const BoundingBox& bounds) {
+  bool result = true;
+
+  // Go through each plane and check against the bounds
+  //
+  // @NOTE: The code here was taken from the source below: 
+  // https://github.com/Angelo1211/HybridRenderingEngine/blob/master/src/geometry.cpp
+  //
+
+  for(sizei i = 0; i < 6; i++) {
+    // Check against each corner of the box
+    
+    i32 out = 0; 
+
+    out += ((plane_get_distance(camera.planes[i], bounds.min) < 0.0f) ? 1 : 0);
+    out += ((plane_get_distance(camera.planes[i], Vec3(bounds.max.x, bounds.min.y, bounds.min.z)) < 0.0f) ? 1 : 0);
+    out += ((plane_get_distance(camera.planes[i], Vec3(bounds.min.x, bounds.max.y, bounds.min.z)) < 0.0f) ? 1 : 0);
+    out += ((plane_get_distance(camera.planes[i], Vec3(bounds.max.x, bounds.max.y, bounds.min.z)) < 0.0f) ? 1 : 0);
+    out += ((plane_get_distance(camera.planes[i], Vec3(bounds.min.x, bounds.min.y, bounds.max.z)) < 0.0f) ? 1 : 0);
+    out += ((plane_get_distance(camera.planes[i], Vec3(bounds.max.x, bounds.min.y, bounds.max.z)) < 0.0f) ? 1 : 0);
+    out += ((plane_get_distance(camera.planes[i], Vec3(bounds.min.x, bounds.max.y, bounds.min.z)) < 0.0f) ? 1 : 0);
+    out += ((plane_get_distance(camera.planes[i], bounds.max) < 0.0f) ? 1 : 0);
+
+    // Check if we missed any corners
+
+    if (out != 8) {
+      continue;
+    }
+
+    // We missed every single one!
+    
+    result = false; 
+    break;
+  }
+
+  // Done!
+  return result;
+}
+
 /// Camera functions
 ///---------------------------------------------------------------------------------------------------------------------
 

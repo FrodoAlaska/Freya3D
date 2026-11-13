@@ -711,17 +711,6 @@ void gui_edit_entity(const char* name, EntityWorld& world, EntityID& entt) {
     }
   }
   
-  // Tag
- 
-  if(entity_has_component<TagComponent>(world, entt)) {
-    if(ImGui::TreeNode("Tag")) {
-      TagComponent& tag = entity_get_component<TagComponent>(world, entt);
-      ImGui::InputText("Tag", &tag.tag);
-
-      ImGui::TreePop();
-    }
-  }
-  
   // Timer 
 
   if(entity_has_component<Timer>(world, entt)) {
@@ -799,14 +788,12 @@ void gui_edit_entity_world(const char* name, EntityWorld& world) {
   u32 count = 0;
 
   for(auto& entt : view) {
-    String name = ("Entity " + std::to_string(count));
-    if(entity_has_component<TagComponent>(world, entt)) {
-      name = entity_get_component_const<TagComponent>(world, entt).tag;
-    }
+    EntityID entt_id = entt;
+    
+    SceneComponent& scene = entity_get_component<SceneComponent>(world, entt_id);
+    String name           = scene.tag == "_" ? ("Entity " + std::to_string(count)) : scene.tag;
     
     count++;
-    EntityID entt_id = entt;
-
     gui_edit_entity(name.c_str(), world, entt_id);
   }
 

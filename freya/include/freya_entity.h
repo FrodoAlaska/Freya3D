@@ -48,11 +48,27 @@ using OnTimerRunoutFn = std::function<void(EntityWorld& world, EntityID& entt, v
 /// ----------------------------------------------------------------------
 
 /// ----------------------------------------------------------------------
-/// TagComponent
-struct TagComponent {
-  String tag;
+/// EntityDesc
+struct EntityDesc {
+  Vec3 position = Vec3(0.0f);
+  Quat rotation = Quat(1.0f, 0.0f, 0.0f, 0.0f);
+  Vec3 scale    = Vec3(1.0f);
+
+  String tag      = "_";
+  EntityID parent = ENTITY_NULL;
 };
-/// TagComponent
+/// EntityDesc
+/// ----------------------------------------------------------------------
+
+/// ----------------------------------------------------------------------
+/// SceneComponent
+struct SceneComponent {
+  String tag = "_"; 
+
+  EntityID parent = ENTITY_NULL;
+  Mat4 transform  = Mat4(1.0f);
+};
+/// SceneComponent
 /// ----------------------------------------------------------------------
 
 /// ----------------------------------------------------------------------
@@ -106,8 +122,6 @@ struct SkyboxComponent {
 struct MeshComponent {
   Mesh mesh;
   Material material;
-
-  Mat4 transform = Mat4(1.0f);
 };
 /// MeshComponent
 /// ----------------------------------------------------------------------
@@ -118,7 +132,7 @@ struct MeshInstancedComponent {
   Mesh mesh;
   Material material;
 
-  DynamicArray<Mat4> transforms;
+  DynamicArray<Mat4> transforms; // @TODO (Mesh/instanced)
 };
 /// MeshInstancedComponent
 /// ----------------------------------------------------------------------
@@ -126,8 +140,8 @@ struct MeshInstancedComponent {
 /// ----------------------------------------------------------------------
 /// ModelComponent
 struct ModelComponent {
-  Model* model   = nullptr;
-  Mat4 transform = Mat4(1.0f);
+  Model* model = nullptr;
+  DynamicArray<EntityID> mesh_ids;
 };
 /// ModelComponent
 /// ----------------------------------------------------------------------
@@ -136,7 +150,6 @@ struct ModelComponent {
 /// BillboardComponent
 struct BillboardComponent {
   Texture texture = {}; 
-  Mat4 transform  = Mat4(1.0f);
 };
 /// BillboardComponent
 /// ----------------------------------------------------------------------
@@ -160,12 +173,9 @@ FREYA_API void entity_world_update(EntityWorld& world, const f32 delta_time);
 /// ----------------------------------------------------------------------
 /// EntityID functions
 
-/// Create an return a new entity in the given `world`, with `position`, 
-/// `scale`, and `rotation` as its transform properties.
-FREYA_API EntityID entity_create(EntityWorld& world,
-                                 const Vec3& position, 
-                                 const Vec3& scale    = Vec3(1.0f), 
-                                 const Quat& rotation = Quat(0.0f, 0.0f, 0.0f, 1.0f));
+/// Create and return a new entity in the given `world` using the information 
+/// given in the passed `desc`.
+FREYA_API EntityID entity_create(EntityWorld& world, const EntityDesc& desc);
 
 /// Destroy the given `entt` and remove it and its components from `world`.
 FREYA_API void entity_destroy(EntityWorld& world, EntityID& entt);
@@ -205,9 +215,6 @@ FREYA_API AudioSourceID& entity_add_audio_source(EntityWorld& world,
 /// A helper function to add a noise generator to `entt`, using the information 
 /// in `desc`, mirroring the `noise_generator_create` function.
 FREYA_API NoiseGenerator* entity_add_noise_generator(EntityWorld& world, EntityID& entt, const NoiseGeneratorDesc& desc);
-
-/// A helper function to add a tag to `entt` using the given `tag`.
-FREYA_API TagComponent& entity_add_tag(EntityWorld& world, EntityID& entt, const String& tag);
 
 /// A helper function to add a timer component to `entt`, using the given `desc`,
 /// mirroring the `timer_create` function, and the `runout_func` and `user_data`.
