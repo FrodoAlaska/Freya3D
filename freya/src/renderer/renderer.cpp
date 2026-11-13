@@ -720,6 +720,10 @@ f32 renderer_get_gamma() {
   return s_renderer.frame_data.u_gamma;
 }
 
+f32 renderer_get_aspect_ratio() {
+  return window_get_aspect_ratio(s_renderer.window);
+}
+
 sg_swapchain renderer_get_default_swapchain() {
   sg_swapchain swapchain = {};
 
@@ -764,8 +768,6 @@ void renderer_prepare() {
   }
 
   if(main_cam) {
-    main_cam->aspect = window_get_aspect_ratio(s_renderer.window);
-
     s_renderer.frame_data.u_camera_pos = main_cam->position;
     s_renderer.frame_data.u_exposure   = main_cam->exposure;
 

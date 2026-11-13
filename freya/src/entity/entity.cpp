@@ -206,18 +206,11 @@ void entity_destroy(EntityWorld& world, EntityID& entt) {
 Camera& entity_add_camera(EntityWorld& world, EntityID& entt, const CameraDesc& desc) {
   Transform& transform = world.get<Transform>(entt);
   Camera& camera       = world.emplace<Camera>(entt); 
-  
-  camera.fov      = desc.fov;
-  camera.exposure = desc.exposure;
-
-  camera.near_plane = desc.near_plane;
-  camera.far_plane  = desc.far_plane;
 
   camera.position = transform._position;
   camera.rotation = transform._rotation;
-
-  camera.view = Mat4(1.0f);
-
+  
+  camera_create(camera, desc);
   return camera;
 }
 

@@ -182,6 +182,15 @@ struct BoundingBox {
 ///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------
+/// Plane
+struct Plane {
+  Vec3 normal; 
+  f32 d;
+};
+/// Plane
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
 /// Math common functions
 
 /// Clamp the float `value` between `min` and `max`
@@ -623,6 +632,18 @@ FREYA_API bool rect_in_rect(const Rect2D& r1, const Rect2D& r2);
 FREYA_API BoundingBox bounding_box_calculate(const DynamicArray<Vertex3D>& vertices);
 
 /// BoundingBox functions
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
+/// Plane functions
+
+/// Setup a plane using the given `normal` and `point` vectors.
+FREYA_API void plane_create(Plane& out_plane, const Vec3& normal, const Vec3& point);
+
+/// Return the distance between the given `plane` and `points`.
+FREYA_API f32 plane_get_distance(const Plane& plane, const Vec3& points);
+
+/// Plane functions
 ///---------------------------------------------------------------------------------------------------------------------
 
 } // End of freya

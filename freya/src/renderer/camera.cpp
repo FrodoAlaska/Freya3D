@@ -6,55 +6,103 @@
 namespace freya { // Start of freya
 
 ///---------------------------------------------------------------------------------------------------------------------
+/// PlaneType
+enum PlaneType {
+  PLANE_TOP, 
+  PLANE_BOTTOM,
+  PLANE_LEFT, 
+  PLANE_RIGHT,
+  PLANE_NEAR, 
+  PLANE_FAR,
+};
+/// PlaneType
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
 /// Private functions
 
-static void update_camera_frustums(CameraController& controller, Camera& cam) {
-  // Calculate required values 
+static void update_camera_frustums(Camera& camera) {
+  // Calculate the height and width of the near plane  
 
-  f32 tan_fov    = freya::tan(FREYA_TO_RADIANS(cam.fov) * 0.5f); // Half the FOV
-  Vec3 cam_right = vec3_cross(controller.front, controller.up);
+  f32 half_tan = (f32)freya::tan(FREYA_TO_RADIANS(camera.fov) / 2.0f);
 
-  // Calculating the bounds of the frustrum
+  camera.near_height = camera.near_plane  * half_tan; 
+  camera.near_width  = camera.near_height * camera.aspect;
 
-  f32 near_height = 2.0f * tan_fov * cam.near_plane;
-  f32 near_width  = near_height    * cam.aspect;
+  // Get the required vectors 
 
-  f32 far_height = 2.0f * tan_fov * cam.far_plane;
-  f32 far_width  = far_height     * cam.aspect;
+  Vec3 right = Vec3(camera.view[0][0], camera.view[0][1], camera.view[0][2]);
+  Vec3 up    = Vec3(camera.view[1][0], camera.view[1][1], camera.view[1][2]);
+  Vec3 front = Vec3(camera.view[2][0], camera.view[2][1], camera.view[2][2]);
 
-  // Calculating the center of both the near and far planes
+  // Get the world-space center points of the near and far planes 
 
-  Vec3 near_center = cam.position + (controller.front * cam.near_plane);
-  Vec3 far_center  = cam.position + (controller.front * cam.far_plane);
+  Vec3 near_center = camera.position - front * camera.near_plane;
+  Vec3 far_center  = camera.position - front * camera.far_plane;
 
-  // Calculating each far point in both the near and far planes
-
-  Vec3 near_top   = near_center + controller.up * (near_height * 0.5f); 
-  Vec3 near_right = near_center + cam_right     * (near_width  * 0.5f);
-
-  Vec3 far_top   = far_center + controller.up * (far_height * 0.5f); 
-  Vec3 far_right = far_center + cam_right     * (far_width  * 0.5f);
-
-  //
-  // Filling the given frustums
+  // 
+  // Calculate the planes 
   //
 
-  // Near plane
+  Vec3 point, normal;
 
-  cam.frustums[0] = near_center - near_top - near_right; // Bottom left
-  cam.frustums[1] = near_center + near_top - near_right; // Top left
-  cam.frustums[2] = near_center + near_top + near_right; // Top right
-  cam.frustums[3] = near_center - near_top + near_right; // Bottom right
+  // Near and far 
   
-  // Far plane
+  plane_create(camera.planes[PLANE_NEAR], -front, near_center);
+  plane_create(camera.planes[PLANE_FAR], front, far_center);
 
-  cam.frustums[4] = far_center - far_top - far_right; // Bottom left
-  cam.frustums[5] = far_center + far_top - far_right; // Top left
-  cam.frustums[6] = far_center + far_top + far_right; // Top right
-  cam.frustums[7] = far_center - far_top + far_right; // Bottom right
+  // Top 
+
+  point  = near_center + up * camera.near_height; 
+  normal = vec3_cross(vec3_normalize(point - camera.position), right); 
+
+  plane_create(camera.planes[PLANE_TOP], normal, point);
+
+  // Bottom
+
+  point  = near_center - up * camera.near_height; 
+  normal = vec3_cross(right, vec3_normalize(point - camera.position)); 
+
+  plane_create(camera.planes[PLANE_BOTTOM], normal, point);
+
+  // Left
+
+  point  = near_center - right * camera.near_width; 
+  normal = vec3_cross(vec3_normalize(point - camera.position), up); 
+
+  plane_create(camera.planes[PLANE_LEFT], normal, point);
+  
+  // Right
+
+  point  = near_center + right * camera.near_width; 
+  normal = vec3_cross(up, vec3_normalize(point - camera.position)); 
+
+  plane_create(camera.planes[PLANE_RIGHT], normal, point);
 }
 
 /// Private functions
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
+/// Camera functions
+
+void camera_create(Camera& out_camera, const CameraDesc& desc) {
+  out_camera.fov      = desc.fov;
+  out_camera.exposure = desc.exposure;
+
+  out_camera.near_plane = desc.near_plane;
+  out_camera.far_plane  = desc.far_plane;
+
+  out_camera.near_width  = 0.0f; 
+  out_camera.near_height = 0.0f;
+
+  out_camera.aspect = renderer_get_aspect_ratio();
+  out_camera.view   = Mat4(1.0f);
+
+  update_camera_frustums(out_camera);
+}
+
+/// Camera functions
 ///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------
@@ -109,7 +157,7 @@ void camera_controller_free(CameraController& controller, Camera& camera, f32 de
   // Recalculate the camera's frustums
   
   if(updated) {
-    update_camera_frustums(controller, camera);
+    update_camera_frustums(camera);
   }
 }
 
@@ -162,7 +210,7 @@ void camera_controller_fps(CameraController& controller, Camera& camera, f32 del
   // Recalculate the camera's frustums
   
   if(updated) {
-    update_camera_frustums(controller, camera);
+    update_camera_frustums(camera);
   }
 }
 

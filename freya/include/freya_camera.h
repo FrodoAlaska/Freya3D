@@ -15,9 +15,6 @@ const f32 CAMERA_MAX_DEGREES  = 89.0f;
 /// The maximum amount of zoom the camera can achieve.
 const f32 CAMERA_MAX_ZOOM     = 180.0f;
 
-/// The maximum amount of frstums a camera can have.
-const u32 CAMERA_FRUSTUMS_MAX = 8;
-
 /// Consts
 ///---------------------------------------------------------------------------------------------------------------------
 
@@ -63,13 +60,14 @@ struct Camera {
   f32 exposure;
 
   f32 near_plane, far_plane;
+  f32 near_width, near_height;
   f32 aspect;
 
   Vec3 position; 
   Quat rotation;
 
   Mat4 transform, view;
-  Vec3 frustums[CAMERA_FRUSTUMS_MAX];
+  Plane planes[6];
 };
 /// Camera 
 ///---------------------------------------------------------------------------------------------------------------------
@@ -85,6 +83,15 @@ struct CameraController {
   Vec3 front, up;
 };
 /// CameraController
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
+/// Camera functions
+
+/// Create and setup the given `out_camera` using the information given in `desc`.
+FREYA_API void camera_create(Camera& out_camera, const CameraDesc& desc);
+
+/// Camera functions
 ///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------

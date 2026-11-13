@@ -118,6 +118,9 @@ FREYA_API const Color& renderer_get_clear_color();
 /// Retrieve renderer's current gamma value.
 FREYA_API f32 renderer_get_gamma();
 
+/// Retrieve renderer's current aspect ratio.
+FREYA_API f32 renderer_get_aspect_ratio();
+
 /// Retrieve a default platform-specific swapchain to give to any passes
 FREYA_API sg_swapchain renderer_get_default_swapchain();
 

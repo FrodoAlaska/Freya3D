@@ -16,6 +16,7 @@ set(FREYA_SOURCES
   ${FREYA_SRC_DIR}/math/random.cpp
   ${FREYA_SRC_DIR}/math/point.cpp
   ${FREYA_SRC_DIR}/math/bounding_box.cpp
+  ${FREYA_SRC_DIR}/math/plane.cpp
   ${FREYA_SRC_DIR}/math/matrix.cpp
   ${FREYA_SRC_DIR}/math/vector.cpp
   ${FREYA_SRC_DIR}/math/quaternion.cpp
