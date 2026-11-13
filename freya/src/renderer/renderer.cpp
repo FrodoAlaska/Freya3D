@@ -764,12 +764,14 @@ void renderer_prepare() {
   }
 
   if(main_cam) {
-    s_renderer.frame_data.u_view       = main_cam->view;
+    main_cam->aspect = window_get_aspect_ratio(s_renderer.window);
+
     s_renderer.frame_data.u_camera_pos = main_cam->position;
     s_renderer.frame_data.u_exposure   = main_cam->exposure;
 
+    s_renderer.frame_data.u_view       = main_cam->view;
     s_renderer.frame_data.u_projection = mat4_perspective(main_cam->fov * DEG2RAD, 
-                                                          window_get_aspect_ratio(s_renderer.window),
+                                                          main_cam->aspect,
                                                           main_cam->near_plane, 
                                                           main_cam->far_plane);
   }
@@ -965,8 +967,7 @@ void renderer_prepare() {
   } 
 
   // Prepare any passes
-  // @TODO (Renderer/shadow pass)
-  // shadow_pass_prepare(s_renderer.passes[RENDER_PASS_SHADOW], *main_cam, *dir_light, s_renderer.frame_data.u_light_space);
+  shadow_pass_prepare(s_renderer.passes[RENDER_PASS_SHADOW], *main_cam, *dir_light, s_renderer.frame_data.u_light_space);
 }
 
 void renderer_commit() {
@@ -976,8 +977,8 @@ void renderer_commit() {
   // Commit all of the passes in order
   // 
 
-  // @TODO: Shadow...
-  // shadow_pass_commit(s_renderer.passes[RENDER_PASS_SHADOW], s_renderer.queues[RENDER_QUEUE_SHADOW], s_renderer.frame_data);
+  // Shadow...
+  shadow_pass_commit(s_renderer.passes[RENDER_PASS_SHADOW], s_renderer.queues[RENDER_QUEUE_SHADOW], s_renderer.frame_data);
  
   // Geometry...
 

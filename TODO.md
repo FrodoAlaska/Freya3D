@@ -24,13 +24,10 @@
 
 - Maybe we should just use an sRGB format for color textures instead of decoding and encoding the values in the shader?
 
-- Physics 
-    - Either Box3D or Jolt... I'm not sure yet...
-
-- Animations
-    - I don't know yet...
-
 ## Issues To Fix 
+
+- Camera 
+    - Improve the camera's controller to make it more general a little bit more. Look into the camera controller functions and you'll understand what needs to be fixed.
 
 - Transforms 
     - Maybe we need to represent transforms differently. 

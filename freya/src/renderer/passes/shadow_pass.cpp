@@ -51,7 +51,7 @@ void shadow_pass_init(RenderPass& pass, Window* window, const IVec2& shadow_size
 
     // Set up the action 
 
-    p.action.depth             = {};
+    p.action.depth = {};
 
     p.action.depth.load_action  = SG_LOADACTION_CLEAR;
     p.action.depth.store_action = SG_STOREACTION_STORE;
@@ -76,32 +76,32 @@ void shadow_pass_prepare(RenderPass& pass, const Camera& camera, const Direction
   // Get the center of the frustrum by averaging the 
   // frustrum's corners.
 
-  // Vec3 center = Vec3(0.0f);
-  // for(u32 i = 0; i < CAMERA_FRUSTUM_CORNERS_MAX; i++) {
-  //   center += camera.corners[i]; 
-  // }
-  // center /= 8.0f;
-  //
-  // // Calculate the light's view matrix for use later 
-  // Mat4 light_view = mat4_look_at(center - light.direction, center, Vec3(0.0f, 1.0f, 0.0f));
-  //
-  // // Calculate the extents of the frustrum
-  //
-  // Vec3 min = Vec3(FLOAT_MAX);
-  // Vec3 max = Vec3(FLOAT_MIN);
-  //
-  // for(sizei i = 0; i < 8; i++) {
-  //   Vec3 center_light_space = Vec3(light_view * Vec4(camera.corners[i], 1.0f));
-  //
-  //   min = vec3_min(min, center_light_space);
-  //   max = vec3_max(max, center_light_space);
-  // }
-  //
-  // // Calculate the projection and view matrices and 
-  // // send the final result to the shader.
-  //
-  // Mat4 light_projection = mat4_ortho(min.x, max.x, min.y, max.y, min.z, max.z);
-  // out_mat               = (light_projection * light_view);
+  Vec3 center = Vec3(0.0f);
+  for(u32 i = 0; i < CAMERA_FRUSTUMS_MAX; i++) {
+    center += camera.frustums[i]; 
+  }
+  center /= (f32)CAMERA_FRUSTUMS_MAX;
+
+  // Calculate the light's view matrix for use later 
+  Mat4 light_view = mat4_look_at(center - vec3_normalize(-light.direction), center, Vec3(0.0f, 1.0f, 0.0f));
+
+  // Calculate the extents of the frustrum
+
+  Vec3 min = Vec3(FLOAT_MAX);
+  Vec3 max = Vec3(FLOAT_MIN);
+
+  for(sizei i = 0; i < CAMERA_FRUSTUMS_MAX; i++) {
+    Vec3 center_light_space = Vec3(light_view * Vec4(camera.frustums[i], 1.0f));
+
+    min = vec3_min(min, center_light_space);
+    max = vec3_max(max, center_light_space);
+  }
+
+  // Calculate the projection and view matrices and 
+  // send the final result to the shader.
+
+  Mat4 light_projection = mat4_ortho(min.x, max.x, min.y, max.y, min.z, max.z);
+  out_mat               = (light_projection * light_view);
 }
 
 void shadow_pass_commit(RenderPass& pass, RenderQueue& queue, FrameData_t& frame_data) {
