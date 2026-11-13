@@ -142,9 +142,12 @@ bool app_init(const freya::Args& args, freya::Window* window) {
   // Camera
   {
     // Create the camera entity 
-
-    freya::EntityID camera_entt = freya::entity_create(s_app.world, freya::Vec3(10.0f, 0.0f, 10.0f));
-    freya::entity_add_tag(s_app.world, camera_entt, "Camera");
+   
+    freya::EntityDesc entt_desc = {
+        .position = freya::Vec3(10.0f, 0.0f, 10.0f),
+        .tag      = "Camera",
+    };
+    freya::EntityID camera_entt = freya::entity_create(s_app.world, entt_desc);
     
     freya::CameraDesc cam_desc = {
         .near_plane = 0.1f, 
@@ -193,16 +196,18 @@ bool app_init(const freya::Args& args, freya::Window* window) {
     };
     freya::AssetID material_id = freya::asset_group_push_material(s_app.group_id, mat_desc);
 
-    // Create the mesh entity 
+    // Create the mesh entity
   
-    freya::Vec3 position = freya::Vec3(10.0f, 0.0f, 10.0f);
-    freya::Vec3 scale    = freya::Vec3(0.1f);
-    freya::Quat rotation = freya::quat_angle_axis(freya::Vec3(1.0f, 0.0f, 0.0f), FREYA_TO_RADIANS(0.0f));
+    freya::EntityDesc entt_desc = {
+        .position = freya::Vec3(10.0f, 0.0f, 10.0f),
+        .rotation = freya::quat_angle_axis(freya::Vec3(1.0f, 0.0f, 0.0f), FREYA_TO_RADIANS(0.0f)),
+        .scale    = freya::Vec3(0.1f),
+        
+        .tag = "Mesh",
+    };
 
-    freya::EntityID mesh_entt = freya::entity_create(s_app.world, position, scale, rotation);
-    
+    freya::EntityID mesh_entt = freya::entity_create(s_app.world, entt_desc);
     freya::entity_add_mesh(s_app.world, mesh_entt, mesh_id);
-    freya::entity_add_tag(s_app.world, mesh_entt, "Mesh");
   }
 
   // Nothing went wrong. Return true.
