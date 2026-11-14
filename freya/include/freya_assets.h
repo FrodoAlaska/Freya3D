@@ -77,6 +77,7 @@ enum MaterialTextureType {
   MATERIAL_TEXTURE_ROUGHNESS,
   MATERIAL_TEXTURE_METALLIC,
   MATERIAL_TEXTURE_NORMAL,
+  MATERIAL_TEXTURE_EMISSIVE,
 };
 /// MaterialTextureType
 ///---------------------------------------------------------------------------------------------------------------------

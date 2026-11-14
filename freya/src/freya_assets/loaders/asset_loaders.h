@@ -40,8 +40,9 @@ struct MeshLoader {
 struct MaterialLoader {
   freya::String name; 
 
-  freya::f32 roughness;
-  freya::f32 metallic;
+  freya::f32 roughness = 1.0f;
+  freya::f32 metallic  = 0.0f;
+  freya::f32 emissive  = 0.0f;
 
   freya::Vec3 color; 
 
@@ -49,6 +50,7 @@ struct MaterialLoader {
   freya::i8 roughness_index = -1;
   freya::i8 metallic_index  = -1;
   freya::i8 normal_index    = -1;
+  freya::i8 emissive_index  = -1;
 };
 /// MaterialLoader
 /// ----------------------------------------------------------------------

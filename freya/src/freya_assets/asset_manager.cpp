@@ -362,11 +362,13 @@ static void read_models(File& file, AssetGroup& group) {
         .roughness_id = mat.roughness_index == -1 ? AssetID{} : textures[mat.roughness_index],
         .metallic_id  = mat.metallic_index  == -1 ? AssetID{} : textures[mat.metallic_index],
         .normal_id    = mat.normal_index    == -1 ? AssetID{} : textures[mat.normal_index],
+        .emissive_id  = mat.emissive_index  == -1 ? AssetID{} : textures[mat.emissive_index],
 
         .color = Vec4(mat.color.r, mat.color.g, mat.color.b, 1.0f),
 
         .roughness = mat.roughness, 
         .metallic  = mat.metallic, 
+        .emissive  = mat.emissive,
 
         .shadows_enabled = true,
       };
@@ -824,6 +826,9 @@ AssetID asset_group_push_texture(const AssetGroupID& group_id, const MaterialTex
         }
       }
     } break;
+    case MATERIAL_TEXTURE_EMISSIVE: 
+      memory_set(pixels, 0x00000000, sizeof(pixels));
+      break;
   }
 
   img_desc.data.mip_levels[0] = SG_RANGE(pixels);
@@ -993,6 +998,7 @@ AssetID asset_group_push_material(const AssetGroupID& group_id, const MaterialDe
 
   material.roughness = desc.roughness;
   material.metallic  = desc.metallic;
+  material.emissive  = desc.emissive;
 
   material.shadows_enabled = desc.shadows_enabled;
 
@@ -1004,6 +1010,7 @@ AssetID asset_group_push_material(const AssetGroupID& group_id, const MaterialDe
   material.roughness_map = defaults.roughness_map;
   material.metallic_map  = defaults.metallic_map;
   material.normal_map    = defaults.normal_map;
+  material.emissive_map  = defaults.emissive_map;
 
   if(desc.albedo_id.is_valid()) {
     material.albedo_map = asset_group_get_texture(desc.albedo_id);
@@ -1021,6 +1028,10 @@ AssetID asset_group_push_material(const AssetGroupID& group_id, const MaterialDe
     material.normal_map = asset_group_get_texture(desc.normal_id);
   }
 
+  if(desc.emissive_id.is_valid()) {
+    material.emissive_map = asset_group_get_texture(desc.emissive_id);
+  }
+
   // New material ID
 
   AssetID id; 
@@ -1033,6 +1044,7 @@ AssetID asset_group_push_material(const AssetGroupID& group_id, const MaterialDe
   FREYA_LOG_DEBUG("     Color     = \'%f, %f, %f, %f\'", material.color.r, material.color.g, material.color.g, material.color.a);
   FREYA_LOG_DEBUG("     Roughness = \'%f\'", material.roughness);
   FREYA_LOG_DEBUG("     Metallic  = \'%f\'", material.metallic);
+  FREYA_LOG_DEBUG("     Emissive  = \'%f\'", material.emissive);
   FREYA_LOG_DEBUG("     Shadows   = %s", (material.shadows_enabled ? "true" : "false"));
 
   // Done!

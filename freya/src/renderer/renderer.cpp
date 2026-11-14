@@ -116,20 +116,23 @@ static void init_defaults() {
       asset_group_push_texture(s_renderer.group_id, MATERIAL_TEXTURE_ROUGHNESS),
       asset_group_push_texture(s_renderer.group_id, MATERIAL_TEXTURE_METALLIC),
       asset_group_push_texture(s_renderer.group_id, MATERIAL_TEXTURE_NORMAL),
+      asset_group_push_texture(s_renderer.group_id, MATERIAL_TEXTURE_EMISSIVE),
     };
 
     s_renderer.defaults.albedo_map    = asset_group_get_texture(texture_ids[0]);
     s_renderer.defaults.roughness_map = asset_group_get_texture(texture_ids[1]);
-    s_renderer.defaults.metallic_map  = asset_group_get_texture(texture_ids[3]);
-    s_renderer.defaults.normal_map    = asset_group_get_texture(texture_ids[2]);
+    s_renderer.defaults.metallic_map  = asset_group_get_texture(texture_ids[2]);
+    s_renderer.defaults.normal_map    = asset_group_get_texture(texture_ids[3]);
+    s_renderer.defaults.emissive_map  = asset_group_get_texture(texture_ids[4]);
 
     // Material init
 
     MaterialDesc mat_desc = {
       .albedo_id    = texture_ids[0], 
       .roughness_id = texture_ids[1], 
-      .metallic_id  = texture_ids[3], 
-      .normal_id    = texture_ids[2], 
+      .metallic_id  = texture_ids[2], 
+      .normal_id    = texture_ids[3], 
+      .emissive_id  = texture_ids[4], 
     };
     s_renderer.defaults.material = asset_group_get_material(asset_group_push_material(s_renderer.group_id, mat_desc));
   }
@@ -483,13 +486,15 @@ static void render_queue_mesh(RenderQueue& queue, Camera& camera, MeshComponent&
   entry.bindings.views[2] = comp.material.roughness_map.view;
   entry.bindings.views[3] = comp.material.metallic_map.view;
   entry.bindings.views[4] = comp.material.normal_map.view;
-  entry.bindings.views[5] = s_renderer.passes[RENDER_PASS_SHADOW].attachments[0];
+  entry.bindings.views[5] = comp.material.emissive_map.view;
+  entry.bindings.views[6] = s_renderer.passes[RENDER_PASS_SHADOW].attachments[0];
 
   entry.bindings.samplers[0] = comp.material.albedo_map.sampler;
   entry.bindings.samplers[1] = comp.material.roughness_map.sampler;
   entry.bindings.samplers[2] = comp.material.metallic_map.sampler;
   entry.bindings.samplers[3] = comp.material.normal_map.sampler;
-  entry.bindings.samplers[4] = s_renderer.passes[RENDER_PASS_SHADOW].sampler;
+  entry.bindings.samplers[4] = comp.material.emissive_map.sampler;
+  entry.bindings.samplers[5] = s_renderer.passes[RENDER_PASS_SHADOW].sampler;
 
   // Setup the material 
 
@@ -497,6 +502,7 @@ static void render_queue_mesh(RenderQueue& queue, Camera& camera, MeshComponent&
     comp.material.color, 
     comp.material.roughness, 
     comp.material.metallic,
+    comp.material.emissive,
   };
 
   // Fill the rest of the entry
@@ -550,13 +556,15 @@ static void render_queue_mesh_instanced(RenderQueue& queue, MeshInstancedCompone
   entry.bindings.views[2] = comp.material.roughness_map.view;
   entry.bindings.views[3] = comp.material.metallic_map.view;
   entry.bindings.views[4] = comp.material.normal_map.view;
-  entry.bindings.views[5] = s_renderer.passes[RENDER_PASS_SHADOW].attachments[0];
+  entry.bindings.views[5] = comp.material.emissive_map.view;
+  entry.bindings.views[6] = s_renderer.passes[RENDER_PASS_SHADOW].attachments[0];
 
   entry.bindings.samplers[0] = comp.material.albedo_map.sampler;
   entry.bindings.samplers[1] = comp.material.roughness_map.sampler;
   entry.bindings.samplers[2] = comp.material.metallic_map.sampler;
   entry.bindings.samplers[3] = comp.material.normal_map.sampler;
-  entry.bindings.samplers[4] = s_renderer.passes[RENDER_PASS_SHADOW].sampler;
+  entry.bindings.samplers[4] = comp.material.emissive_map.sampler;
+  entry.bindings.samplers[5] = s_renderer.passes[RENDER_PASS_SHADOW].sampler;
 
   // Setup the material 
 
@@ -564,6 +572,7 @@ static void render_queue_mesh_instanced(RenderQueue& queue, MeshInstancedCompone
     comp.material.color, 
     comp.material.roughness, 
     comp.material.metallic,
+    comp.material.emissive,
   };
 
   // Fill the rest of the entry

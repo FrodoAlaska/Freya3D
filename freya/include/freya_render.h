@@ -60,6 +60,7 @@ struct RendererDefaults {
   Texture roughness_map;
   Texture metallic_map;
   Texture normal_map;
+  Texture emissive_map;
 
   Material material;
 

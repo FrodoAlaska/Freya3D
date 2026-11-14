@@ -5,18 +5,18 @@
 - Physics 
     - [] Box3D or Jolt?
 
-- Animations 
-    - [] Do we implement 3D skeletal animations, or just use billboards for now?
-
 - Renderer
-    - [] Shadows 
     - [] Post-process effects (bloom, blur, etc...)
-    - [] Emissive textures (remember to convert them from sRGB)
+    - [] Ambient occlusion textures
+    - [] Shadows 
     - [] IBL (Image-Based Lighting)
+    - [] Frustrum culling (and maybe look into acceleration spatial structures)
     - [] Decals 
     - [] Particles (CPU, but GPU-based is going to be better) 
-    - [] Frustrum culling (and maybe look into acceleration spatial structures)
     - [] Global illumination
+
+- Animations 
+    - [] Do we implement 3D skeletal animations, or just use billboards for now?
 
 ## Immediate 
 

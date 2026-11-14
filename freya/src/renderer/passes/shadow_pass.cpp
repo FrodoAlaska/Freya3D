@@ -83,7 +83,7 @@ void shadow_pass_prepare(RenderPass& pass, const Camera& camera, const Direction
   // center /= (f32)CAMERA_FRUSTUMS_MAX;
   //
   // // Calculate the light's view matrix for use later 
-  // Mat4 light_view = mat4_look_at(center - vec3_normalize(-light.direction), center, Vec3(0.0f, 1.0f, 0.0f));
+  // Mat4 light_view = mat4_look_at(center - light.direction, center, Vec3(0.0f, 1.0f, 0.0f));
   //
   // // Calculate the extents of the frustrum
   //

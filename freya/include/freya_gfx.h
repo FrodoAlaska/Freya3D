@@ -128,11 +128,13 @@ struct MaterialDesc {
   AssetID roughness_id = {};
   AssetID metallic_id  = {};
   AssetID normal_id    = {};
+  AssetID emissive_id  = {};
 
   Vec4 color = Vec4(1.0f);
 
   f32 roughness = 1.0f; 
-  f32 metallic  = 0.0f; 
+  f32 metallic  = 0.0f;
+  f32 emissive  = 0.0f;
 
   bool shadows_enabled = true;
 };
@@ -151,6 +153,7 @@ struct Material {
   Texture roughness_map; 
   Texture metallic_map; 
   Texture normal_map;
+  Texture emissive_map;
 
   /// The misc. variables the material controls
 
@@ -158,6 +161,7 @@ struct Material {
 
   f32 roughness; 
   f32 metallic; 
+  f32 emissive;
 
   bool shadows_enabled;
 };
