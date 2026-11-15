@@ -522,7 +522,7 @@ void gui_edit_directional_light(const char* name, DirectionalLightComponent* lig
   ImGui::SeparatorText(name); 
   ImGui::PushID(name); 
   
-  ImGui::DragFloat3("Direction", &light->direction[0], s_gui.big_step);
+  ImGui::DragFloat3("Direction", &light->direction[0], s_gui.big_step, -1.0f, 1.0f);
   ImGui::ColorEdit3("Color", &light->color[0]);
 
   ImGui::PopID(); 

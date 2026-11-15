@@ -6,11 +6,11 @@
     - [] Box3D or Jolt?
 
 - Renderer
-    - [] Post-process effects (bloom, blur, etc...)
-    - [] Ambient occlusion textures
-    - [] Shadows 
+    - [x] Shadows 
     - [] IBL (Image-Based Lighting)
+    - [] Ambient occlusion textures
     - [] Frustrum culling (and maybe look into acceleration spatial structures)
+    - [] Post-process effects (bloom, blur, etc...)
     - [] Decals 
     - [] Particles (CPU, but GPU-based is going to be better) 
     - [] Global illumination
@@ -41,6 +41,7 @@
 
 - Renderer
     - We should think about the vertex situation. Should we have one unifying vertex type or multiple???
+    - Eventually add cascaded shadow maps
 
 - 2D UI
     - Maybe have a completely seperate renderer to handle the 2D stuff 

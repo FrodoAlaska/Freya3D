@@ -217,6 +217,9 @@ FREYA_API const f64 atan(const f64 y, const f64 x);
 /// Returns the floored value of `x`
 FREYA_API const f64 floor(const f64 x);
 
+/// Returns the ceiling of the value `x`
+FREYA_API const f64 ceil(const f64 x);
+
 /// Returns the square root of `x`
 FREYA_API const f64 sqrt(const f64 x);
 

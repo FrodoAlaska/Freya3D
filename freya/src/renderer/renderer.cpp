@@ -682,7 +682,7 @@ void renderer_init(Window* window) {
 
   // Render passes init
 
-  shadow_pass_init(s_renderer.passes[RENDER_PASS_SHADOW], s_renderer.window, IVec2(1280));
+  shadow_pass_init(s_renderer.passes[RENDER_PASS_SHADOW], s_renderer.window, IVec2(2048));
   geometry_pass_init(s_renderer.passes[RENDER_PASS_GEOMETRY], s_renderer.window);
 
   // Listen to events

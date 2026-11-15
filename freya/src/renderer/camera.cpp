@@ -56,7 +56,7 @@ static void update_camera_corners(Camera& camera, const CameraBasis& basis) {
     Vec3 center = camera.position + (basis.front * dist[i]);
 
     f32 height = dist[i] * basis.half_tan;
-    f32 width  = dist[i] * camera.near_width;
+    f32 width  = dist[i] * basis.half_tan * camera.aspect;
 
     camera.corners[i * 4 + 0] = center - basis.right * width - basis.up * height;
     camera.corners[i * 4 + 1] = center + basis.right * width - basis.up * height;
@@ -73,8 +73,8 @@ static void update_camera_frustums(Camera& camera) {
   
   // Get the world-space center points of the near and far planes 
 
-  Vec3 near_center = camera.position - basis.front * camera.near_plane;
-  Vec3 far_center  = camera.position - basis.front * camera.far_plane;
+  Vec3 near_center = camera.position + basis.front * camera.near_plane;
+  Vec3 far_center  = camera.position + basis.front * camera.far_plane;
 
   // 
   // Calculate the planes 
@@ -84,8 +84,8 @@ static void update_camera_frustums(Camera& camera) {
 
   // Near and far 
   
-  plane_create(camera.planes[PLANE_NEAR], -basis.front, near_center);
-  plane_create(camera.planes[PLANE_FAR], basis.front, far_center);
+  plane_create(camera.planes[PLANE_NEAR], basis.front, near_center);
+  plane_create(camera.planes[PLANE_FAR], -basis.front, far_center);
 
   // Top 
 
@@ -214,32 +214,24 @@ void camera_controller_free(CameraController& controller, Camera& camera, f32 de
   
   // Move the controller
 
-  f32 speed    = (controller.speed * delta_time);
-  bool updated = false; 
+  f32 speed = (controller.speed * delta_time);
   
   if(input_key_down(KEY_W)) {
     camera.position += controller.front * speed;
-    updated          = true;
   }
   else if(input_key_down(KEY_S)) {
     camera.position -= controller.front * speed;
-    updated          = true;
   }
  
   if(input_key_down(KEY_A)) {
     camera.position -= vec3_normalize(vec3_cross(controller.front, controller.up)) * speed;
-    updated          = true;
   }
   else if(input_key_down(KEY_D)) {
     camera.position += vec3_normalize(vec3_cross(controller.front, controller.up)) * speed;
-    updated          = true;
   }
 
   // Recalculate the camera's frustums
-  
-  if(updated) {
-    update_camera_frustums(camera);
-  }
+  update_camera_frustums(camera);
 }
 
 void camera_controller_fps(CameraController& controller, Camera& camera, f32 delta_time) {
@@ -267,32 +259,24 @@ void camera_controller_fps(CameraController& controller, Camera& camera, f32 del
  
   // Move the controller
 
-  f32 speed    = (controller.speed * delta_time);
-  bool updated = false; 
+  f32 speed = (controller.speed * delta_time);
   
   if(input_key_down(KEY_W)) {
     camera.position += Vec3(controller.front.x, 0.0f, controller.front.z) * speed;
-    updated          = true;
   }
   else if(input_key_down(KEY_S)) {
     camera.position -= Vec3(controller.front.x, 0.0f, controller.front.z) * speed;
-    updated          = true;
   }
   
   if(input_key_down(KEY_A)) {
     camera.position -= vec3_normalize(vec3_cross(controller.front, controller.up)) * speed;
-    updated          = true;
   }
   else if(input_key_down(KEY_D)) {
     camera.position += vec3_normalize(vec3_cross(controller.front, controller.up)) * speed;
-    updated          = true;
   }
 
   // Recalculate the camera's frustums
-  
-  if(updated) {
-    update_camera_frustums(camera);
-  }
+  update_camera_frustums(camera);
 }
 
 /// CameraController functions

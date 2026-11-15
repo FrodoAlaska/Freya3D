@@ -39,6 +39,10 @@ const f64 floor(const f64 x) {
   return glm::floor(x);
 }
 
+const f64 ceil(const f64 x) {
+  return glm::ceil(x);
+}
+
 const f64 sqrt(const f64 x) {
   return glm::sqrt(x);
 }

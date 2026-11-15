@@ -16,8 +16,8 @@ void shadow_pass_init(RenderPass& pass, Window* window, const IVec2& shadow_size
 
   pass.frame_size = shadow_size;
   pass.sampler    = sg_make_sampler(sg_sampler_desc{ 
-    .min_filter = SG_FILTER_LINEAR,
-    .mag_filter = SG_FILTER_LINEAR, 
+    .min_filter = SG_FILTER_NEAREST,
+    .mag_filter = SG_FILTER_NEAREST, 
 
     .wrap_u = SG_WRAP_CLAMP_TO_EDGE,
     .wrap_v = SG_WRAP_CLAMP_TO_EDGE,
@@ -51,9 +51,7 @@ void shadow_pass_init(RenderPass& pass, Window* window, const IVec2& shadow_size
     // Set up the action 
 
     p.action.colors[0].load_action = SG_LOADACTION_CLEAR;
-    p.action.colors[0].clear_value = {
-      1.0f, 1.0f, 1.0f, 1.0f
-    };
+    p.action.colors[0].clear_value = {1.0f, 1.0f, 1.0f, 1.0f};
 
     // Create the texture view to use later
 
@@ -120,24 +118,44 @@ void shadow_pass_prepare(RenderPass& pass, const Camera& camera, const Direction
   }
   center /= (f32)CAMERA_FRUSTUM_CORNERS_MAX;
 
-  // Calculate the light's view matrix for use later 
-  Mat4 light_view = mat4_look_at(center - light.direction, center, Vec3(0.0f, 1.0f, 0.0f));
+  // Calculate the biggest radius of the box
 
-  // Calculate the extents of the frustrum
+  f32 radius = 0.0f;
+  for(u32 i = 0; i < CAMERA_FRUSTUM_CORNERS_MAX; i++) {
+    radius = max_float(radius, vec3_distance(center, camera.corners[i]));
+  } 
 
-  Vec3 min = Vec3(FLOAT_MAX);
-  Vec3 max = Vec3(FLOAT_MIN);
+  // Calculate a stable up vector depending on the given directional camera 
+  
+  f32 up_dot = freya::abs(vec3_dot(light.direction, Vec3(0.0f, 1.0f, 0.0f)));
+  Vec3 up    = Vec3(0.0f, 1.0f, 0.0f);
 
-  for(sizei i = 0; i < CAMERA_FRUSTUM_CORNERS_MAX; i++) {
-    Vec3 center_light_space = Vec3(light_view * Vec4(camera.corners[i], 1.0f));
-
-    min = vec3_min(min, center_light_space);
-    max = vec3_max(max, center_light_space);
+  if(up_dot > 0.99f) {
+    up = Vec3(1.0f, 0.0f, 0.0f);
   }
 
+  // Snap the box to texels in light space
+
+  Mat4 rotation  = mat4_look_at(Vec3(0.0f), light.direction, up);
+  Vec3 center_ls = Vec3(rotation * Vec4(center, 1.0f));
+
+  f32 texel = (2.0f * radius) / (f32)pass.frame_size.x;
+
+  center_ls.x = freya::floor(center_ls.x / texel) * texel;
+  center_ls.y = freya::floor(center_ls.y / texel) * texel;
+
+  // Calculat the new center
+  center = Vec3(mat4_transpose(rotation) * Vec4(center_ls, 1.0f));
+
+  // Calculate the new light view matrix, taking into account
+  // any extra casters in the back
+  
+  f32 back        = radius + 0.05f;
+  Mat4 light_view = mat4_look_at(center - light.direction * back, center, up);
+  
   // Calculate the projection and view matrices and 
   // send the final result to the shader.
-  out_mat = mat4_ortho(min.x, max.x, min.y, max.y, min.z, max.z) * light_view;
+  out_mat = mat4_ortho(-radius, radius, -radius, radius, 0.0f, back + radius) * light_view;
 }
 
 void shadow_pass_commit(RenderPass& pass, RenderQueue& queue, FrameData_t& frame_data) {
