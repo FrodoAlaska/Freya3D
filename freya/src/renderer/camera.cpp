@@ -19,26 +19,62 @@ enum PlaneType {
 ///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------
+/// CameraBasis
+struct CameraBasis {
+  Vec3 right; 
+  Vec3 up; 
+  Vec3 front;
+
+  f32 half_tan;
+};
+/// CameraBasis
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
 /// Private functions
 
-static void update_camera_frustums(Camera& camera) {
+static void update_camera_basis(Camera& camera, CameraBasis& out_basis) {
   // Calculate the height and width of the near plane  
 
-  f32 half_tan = (f32)freya::tan(FREYA_TO_RADIANS(camera.fov) / 2.0f);
+  out_basis.half_tan = (f32)freya::tan(FREYA_TO_RADIANS(camera.fov) / 2.0f);
 
-  camera.near_height = camera.near_plane  * half_tan; 
+  camera.near_height = camera.near_plane  * out_basis.half_tan; 
   camera.near_width  = camera.near_height * camera.aspect;
 
   // Get the required vectors 
 
-  Vec3 right = Vec3(camera.view[0][0], camera.view[0][1], camera.view[0][2]);
-  Vec3 up    = Vec3(camera.view[1][0], camera.view[1][1], camera.view[1][2]);
-  Vec3 front = Vec3(camera.view[2][0], camera.view[2][1], camera.view[2][2]);
+  out_basis.right =  Vec3(camera.view[0][0], camera.view[1][0], camera.view[2][0]);
+  out_basis.up    =  Vec3(camera.view[0][1], camera.view[1][1], camera.view[2][1]);
+  out_basis.front = -Vec3(camera.view[0][2], camera.view[1][2], camera.view[2][2]);
+}
 
+static void update_camera_corners(Camera& camera, const CameraBasis& basis) {
+  // Calculate the 8 corners of the camera 
+
+  f32 dist[2] = {camera.near_plane, camera.far_plane};
+  for(sizei i = 0; i < 2; i++) {
+    Vec3 center = camera.position + (basis.front * dist[i]);
+
+    f32 height = dist[i] * basis.half_tan;
+    f32 width  = dist[i] * camera.near_width;
+
+    camera.corners[i * 4 + 0] = center - basis.right * width - basis.up * height;
+    camera.corners[i * 4 + 1] = center + basis.right * width - basis.up * height;
+    camera.corners[i * 4 + 2] = center + basis.right * width + basis.up * height;
+    camera.corners[i * 4 + 3] = center - basis.right * width + basis.up * height;
+  }
+}
+
+static void update_camera_frustums(Camera& camera) {
+  // Update the basis of the camera
+  
+  CameraBasis basis;
+  update_camera_basis(camera, basis);
+  
   // Get the world-space center points of the near and far planes 
 
-  Vec3 near_center = camera.position - front * camera.near_plane;
-  Vec3 far_center  = camera.position - front * camera.far_plane;
+  Vec3 near_center = camera.position - basis.front * camera.near_plane;
+  Vec3 far_center  = camera.position - basis.front * camera.far_plane;
 
   // 
   // Calculate the planes 
@@ -48,36 +84,39 @@ static void update_camera_frustums(Camera& camera) {
 
   // Near and far 
   
-  plane_create(camera.planes[PLANE_NEAR], -front, near_center);
-  plane_create(camera.planes[PLANE_FAR], front, far_center);
+  plane_create(camera.planes[PLANE_NEAR], -basis.front, near_center);
+  plane_create(camera.planes[PLANE_FAR], basis.front, far_center);
 
   // Top 
 
-  point  = near_center + up * camera.near_height; 
-  normal = vec3_cross(vec3_normalize(point - camera.position), right); 
+  point  = near_center + basis.up * camera.near_height; 
+  normal = vec3_cross(vec3_normalize(point - camera.position), basis.right); 
 
   plane_create(camera.planes[PLANE_TOP], normal, point);
 
   // Bottom
 
-  point  = near_center - up * camera.near_height; 
-  normal = vec3_cross(right, vec3_normalize(point - camera.position)); 
+  point  = near_center - basis.up * camera.near_height; 
+  normal = vec3_cross(basis.right, vec3_normalize(point - camera.position)); 
 
   plane_create(camera.planes[PLANE_BOTTOM], normal, point);
 
   // Left
 
-  point  = near_center - right * camera.near_width; 
-  normal = vec3_cross(vec3_normalize(point - camera.position), up); 
+  point  = near_center - basis.right * camera.near_width; 
+  normal = vec3_cross(vec3_normalize(point - camera.position), basis.up); 
 
   plane_create(camera.planes[PLANE_LEFT], normal, point);
   
   // Right
 
-  point  = near_center + right * camera.near_width; 
-  normal = vec3_cross(up, vec3_normalize(point - camera.position)); 
+  point  = near_center + basis.right * camera.near_width; 
+  normal = vec3_cross(basis.up, vec3_normalize(point - camera.position)); 
 
   plane_create(camera.planes[PLANE_RIGHT], normal, point);
+
+  // Update the corners of the camera 
+  update_camera_corners(camera, basis);
 }
 
 /// Private functions
@@ -97,7 +136,10 @@ void camera_create(Camera& out_camera, const CameraDesc& desc) {
   out_camera.near_height = 0.0f;
 
   out_camera.aspect = renderer_get_aspect_ratio();
-  out_camera.view   = Mat4(1.0f);
+
+  out_camera.transform  = Mat4(1.0f);
+  out_camera.view       = Mat4(1.0f);
+  out_camera.projection = Mat4(1.0f);
 
   update_camera_frustums(out_camera);
 }

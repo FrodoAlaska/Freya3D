@@ -152,8 +152,10 @@ void geometry_pass_commit(RenderPass& pass, const GeometryPassData& data) {
   RenderQueue* billboard_queue = data.billboard_queue;
   { 
     // Update the transforms buffer
+    //
     // @NOTE: We need to do this check or we'll get a seg fault, 
     // if the same is empty.
+    //
 
     if(!billboard_queue->transforms.empty()) {
       sg_range range = {
@@ -188,8 +190,10 @@ void geometry_pass_commit(RenderPass& pass, const GeometryPassData& data) {
   RenderQueue* opaque_queue = data.opaque_queue;
   { 
     // Update the transforms buffer
+    //
     // @NOTE: We need to do this check or we'll get a seg fault, 
     // if the same is empty.
+    //
 
     if(!opaque_queue->transforms.empty()) {
       sg_range range = {

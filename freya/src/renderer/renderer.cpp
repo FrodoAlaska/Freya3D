@@ -301,7 +301,7 @@ static void init_queues() {
     pipe_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT2; // Texture coords
 
     pipe_desc.index_type             = SG_INDEXTYPE_UINT16;
-    pipe_desc.colors[0].pixel_format = SG_PIXELFORMAT_NONE;
+    pipe_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
 
     queue.pipeline = sg_make_pipeline(pipe_desc);
 
@@ -784,10 +784,7 @@ void renderer_prepare() {
     s_renderer.frame_data.u_exposure   = main_cam->exposure;
 
     s_renderer.frame_data.u_view       = main_cam->view;
-    s_renderer.frame_data.u_projection = mat4_perspective(main_cam->fov * DEG2RAD, 
-                                                          main_cam->aspect,
-                                                          main_cam->near_plane, 
-                                                          main_cam->far_plane);
+    s_renderer.frame_data.u_projection = main_cam->projection;
   }
 
   // Update the skybox component

@@ -125,7 +125,13 @@ void entity_world_update(EntityWorld& world, const f32 delta_time) {
       Camera& camera = view.get<Camera>(entt);
 
       camera.transform = mat4_translate(camera.position) * quat_to_mat4(camera.rotation);
-      camera.view      = mat4_inverse(camera.transform);
+      camera.aspect    = renderer_get_aspect_ratio();
+
+      camera.view       = mat4_inverse(camera.transform);
+      camera.projection = mat4_perspective(FREYA_TO_RADIANS(camera.fov),
+                                           camera.aspect,
+                                           camera.near_plane, 
+                                           camera.far_plane);
     }
   }
   

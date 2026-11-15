@@ -10,10 +10,13 @@ namespace freya { // Start of freya
 /// Consts
 
 /// The maximum degrees the camera can achieve. 
-const f32 CAMERA_MAX_DEGREES  = 89.0f;
+const f32 CAMERA_MAX_DEGREES         = 89.0f;
 
 /// The maximum amount of zoom the camera can achieve.
-const f32 CAMERA_MAX_ZOOM     = 180.0f;
+const f32 CAMERA_MAX_ZOOM            = 180.0f;
+
+/// The maximum amount of corners a camera's frustum can have. 
+const u32 CAMERA_FRUSTUM_CORNERS_MAX = 8;
 
 /// Consts
 ///---------------------------------------------------------------------------------------------------------------------
@@ -66,8 +69,11 @@ struct Camera {
   Vec3 position; 
   Quat rotation;
 
-  Mat4 transform, view;
+  Mat4 transform;
+  Mat4 view, projection;
+
   Plane planes[6];
+  Vec3 corners[CAMERA_FRUSTUM_CORNERS_MAX];
 };
 /// Camera 
 ///---------------------------------------------------------------------------------------------------------------------
