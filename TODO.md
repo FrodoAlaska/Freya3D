@@ -42,6 +42,7 @@
 - Renderer
     - We should think about the vertex situation. Should we have one unifying vertex type or multiple???
     - Eventually add cascaded shadow maps
+    - Point light shadows
 
 - 2D UI
     - Maybe have a completely seperate renderer to handle the 2D stuff 

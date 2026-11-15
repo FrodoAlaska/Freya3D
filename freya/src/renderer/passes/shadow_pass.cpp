@@ -16,50 +16,14 @@ void shadow_pass_init(RenderPass& pass, Window* window, const IVec2& shadow_size
 
   pass.frame_size = shadow_size;
   pass.sampler    = sg_make_sampler(sg_sampler_desc{ 
-    .min_filter = SG_FILTER_NEAREST,
-    .mag_filter = SG_FILTER_NEAREST, 
+    .min_filter = SG_FILTER_LINEAR,
+    .mag_filter = SG_FILTER_LINEAR, 
 
     .wrap_u = SG_WRAP_CLAMP_TO_EDGE,
     .wrap_v = SG_WRAP_CLAMP_TO_EDGE,
+
+    .compare = SG_COMPAREFUNC_LESS,
   }); 
-
-  // 
-  // Create the shadow texture image 
-  // 
-  {
-    // Set up the image 
-    
-    sg_image_desc image_desc = {};
-
-    image_desc.width        = pass.frame_size.x;
-    image_desc.height       = pass.frame_size.y;
-    image_desc.sample_count = window_get_samples_count(window);
-
-    image_desc.pixel_format           = SG_PIXELFORMAT_RGBA8; 
-    image_desc.usage.color_attachment = true;
-
-    sg_image color_img = sg_make_image(image_desc);
-
-    // Set up the view
-
-    sg_view_desc view_desc           = {};
-    view_desc.color_attachment.image = color_img;
-
-    // Create the view
-    p.attachments.colors[0] = sg_make_view(view_desc);
-
-    // Set up the action 
-
-    p.action.colors[0].load_action = SG_LOADACTION_CLEAR;
-    p.action.colors[0].clear_value = {1.0f, 1.0f, 1.0f, 1.0f};
-
-    // Create the texture view to use later
-
-    view_desc.color_attachment.image = {};
-    view_desc.texture.image          = color_img;
-
-    pass.attachments.emplace_back(sg_make_view(view_desc));
-  }
 
   //
   // Create the depth-stencil attachment

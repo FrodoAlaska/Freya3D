@@ -289,7 +289,7 @@ static void init_queues() {
     sg_pipeline_desc pipe_desc = {};
 
     pipe_desc.depth.pixel_format  = SG_PIXELFORMAT_DEPTH;
-    pipe_desc.depth.compare       = SG_COMPAREFUNC_LESS_EQUAL;
+    pipe_desc.depth.compare       = SG_COMPAREFUNC_LESS;
     pipe_desc.depth.write_enabled = true;
 
     pipe_desc.shader       = asset_group_get_shader(s_renderer.shaders[SHADER_SHADOW]); 
@@ -301,7 +301,7 @@ static void init_queues() {
     pipe_desc.layout.attrs[3].format = SG_VERTEXFORMAT_FLOAT2; // Texture coords
 
     pipe_desc.index_type             = SG_INDEXTYPE_UINT16;
-    pipe_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA8;
+    pipe_desc.colors[0].pixel_format = SG_PIXELFORMAT_NONE;
 
     queue.pipeline = sg_make_pipeline(pipe_desc);
 
