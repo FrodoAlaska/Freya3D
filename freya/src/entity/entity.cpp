@@ -205,6 +205,51 @@ EntityID entity_create(EntityWorld& world, const EntityDesc& desc) {
   return entt_id;
 }
 
+EntityID entity_instance(EntityWorld& world, EntityID& entt) {
+  // Return a NULL entity if the given entity is invalid 
+
+  if(entt == ENTITY_NULL) {
+    return ENTITY_NULL;
+  }
+
+  // Generate an entity ID
+  EntityID other = world.create();
+
+  // Copy all of the components of the given entity 
+
+  for(auto&& [id, storage] : world.storage()) {
+    if(!storage.contains(entt)) {
+      continue;
+    }
+    
+    storage.push(other, storage.value(entt));
+  }
+
+  // Add an instanced flag to the entity 
+  entity_add_component<InstanceFlag>(world, other, 0);
+
+  // Add the new instance to the master entity 
+
+  SceneComponent& master_scene = entity_get_component<SceneComponent>(world, entt);
+  master_scene.instances.emplace_back(other);
+
+  // Change the tag for convenience
+  
+  SceneComponent& cloned_scene = entity_get_component<SceneComponent>(world, other);
+  cloned_scene.tag = (master_scene.tag + " " + std::to_string((i32)master_scene.instances.size()));
+  
+  // Dispatch an event
+
+  Event event = {
+    .type = EVENT_ENTITY_ADDED, 
+    .entt = other,
+  };
+  event_dispatch(event);
+
+  // Done! 
+  return other;
+}
+
 void entity_destroy(EntityWorld& world, EntityID& entt) {
   // Dispatch an event
 
@@ -309,17 +354,6 @@ MeshComponent& entity_add_mesh(EntityWorld& world,
                                const AssetID& material_id) {
   const Material& default_mat = renderer_get_defaults().material; 
   return world.emplace<MeshComponent>(entt, 
-                                      asset_group_get_mesh(mesh_id), 
-                                      (material_id.is_valid() ? asset_group_get_material(material_id) : default_mat));
-}
-
-MeshInstancedComponent& entity_add_mesh_instanced(EntityWorld& world, 
-                                                  EntityID& entt, 
-                                                  const AssetID& mesh_id, 
-                                                  const AssetID& material_id) {
-  const Material& default_mat = renderer_get_defaults().material; 
-  return world.emplace<MeshInstancedComponent>(
-                                      entt, 
                                       asset_group_get_mesh(mesh_id), 
                                       (material_id.is_valid() ? asset_group_get_material(material_id) : default_mat));
 }

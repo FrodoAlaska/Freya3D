@@ -31,6 +31,7 @@
 
 - Entity/scenes 
     - Meshes and models should have the loaded names from the disk
+    - Instancing an entity is currently very weird
 
 - Transforms 
     - Maybe we need to represent transforms differently. 

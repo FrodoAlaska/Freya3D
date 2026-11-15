@@ -48,6 +48,20 @@ using OnTimerRunoutFn = std::function<void(EntityWorld& world, EntityID& entt, v
 /// ----------------------------------------------------------------------
 
 /// ----------------------------------------------------------------------
+/// InstanceFlag
+struct InstanceFlag {
+  // 
+  // @NOTE: 
+  //
+  // Contains nothing except a dummy value, but is given 
+  // to entities that have been instanced from another entity. 
+  //
+  i32 __dummy = 0;
+};
+/// InstanceFlag
+/// ----------------------------------------------------------------------
+
+/// ----------------------------------------------------------------------
 /// EntityDesc
 struct EntityDesc {
   Vec3 position = Vec3(0.0f);
@@ -66,7 +80,9 @@ struct SceneComponent {
   String tag = "_"; 
 
   EntityID parent = ENTITY_NULL;
-  Mat4 transform  = Mat4(1.0f);
+  DynamicArray<EntityID> instances; 
+  
+  Mat4 transform = Mat4(1.0f);
 };
 /// SceneComponent
 /// ----------------------------------------------------------------------
@@ -127,17 +143,6 @@ struct MeshComponent {
 /// ----------------------------------------------------------------------
 
 /// ----------------------------------------------------------------------
-/// MeshInstancedComponent
-struct MeshInstancedComponent {
-  Mesh mesh;
-  Material material;
-
-  DynamicArray<Mat4> transforms; // @TODO (Mesh/instanced)
-};
-/// MeshInstancedComponent
-/// ----------------------------------------------------------------------
-
-/// ----------------------------------------------------------------------
 /// ModelComponent
 struct ModelComponent {
   Model* model = nullptr;
@@ -176,6 +181,11 @@ FREYA_API void entity_world_update(EntityWorld& world, const f32 delta_time);
 /// Create and return a new entity in the given `world` using the information 
 /// given in the passed `desc`.
 FREYA_API EntityID entity_create(EntityWorld& world, const EntityDesc& desc);
+
+/// Instance the given `entt`, inheriting the same entity structure.
+///
+/// @NOTE: The function will return a NULL entity if the given `entt` is invalid.
+FREYA_API EntityID entity_instance(EntityWorld& world, EntityID& entt);
 
 /// Destroy the given `entt` and remove it and its components from `world`.
 FREYA_API void entity_destroy(EntityWorld& world, EntityID& entt);
@@ -255,17 +265,6 @@ FREYA_API MeshComponent& entity_add_mesh(EntityWorld& world,
                                          EntityID& entt, 
                                          const AssetID& mesh_id, 
                                          const AssetID& material_id = {});
-
-/// A helper function to add an instanced mesh component to `entt`, using the 
-/// given `mesh_id`, `material_id`.
-///
-/// @NOTE: Since copying arrays is generally awful, in order to add the transforms, 
-/// you must capture the returned `MeshInstancedComponent` struct and append to the 
-/// `.transforms` member yourself. The array will be empty unless added to by the client.
-FREYA_API MeshInstancedComponent& entity_add_mesh_instanced(EntityWorld& world, 
-                                                            EntityID& entt, 
-                                                            const AssetID& mesh_id, 
-                                                            const AssetID& material_id = {});
 
 /// A helper function to add a model component to `entt`, using the given `model_id`.
 FREYA_API ModelComponent& entity_add_model(EntityWorld& world, EntityID& entt, const AssetID& model_id);

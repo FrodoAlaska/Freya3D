@@ -683,10 +683,9 @@ void gui_edit_entity(const char* name, EntityWorld& world, EntityID& entt) {
  
   // Transform
  
+  Transform& transform = entity_get_component<Transform>(world, entt); // Using it later a little down below
   if(ImGui::TreeNode("Transform")) {
-    Transform& transform = entity_get_component<Transform>(world, entt);
     gui_edit_transform("", &transform);
-
     ImGui::TreePop();
   }
  
@@ -776,6 +775,20 @@ void gui_edit_entity(const char* name, EntityWorld& world, EntityID& entt) {
 
       ImGui::TreePop();
     }
+  }
+
+  // Options 
+
+  if(ImGui::TreeNode("Options")) {
+    if(ImGui::Button("Delete")) {
+      entity_destroy(world, entt);
+    }
+
+    if(ImGui::Button("Clone")) {
+      entity_instance(world, entt);
+    }
+
+    ImGui::TreePop();
   }
 
   ImGui::PopID(); 

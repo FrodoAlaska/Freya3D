@@ -10,7 +10,7 @@ struct App {
   freya::AssetGroupID group_id;
 
   freya::EntityWorld world; 
-  freya::EntityID camera_entt;
+  freya::EntityID camera_entt, model_entt, ground_entt;
 };
 
 static App s_app;
@@ -88,11 +88,11 @@ bool app_init(const freya::Args& args, freya::Window* window) {
       .rotation = freya::quat_angle_axis(freya::Vec3(1.0f, 0.0f, 0.0f), FREYA_TO_RADIANS(0.0f)),
       .scale    = freya::Vec3(0.1f),
 
-      .tag = "Model",
+      .tag = "Behlit",
     };
 
-    freya::EntityID model_entt = freya::entity_create(s_app.world, entt_desc);
-    freya::entity_add_model(s_app.world, model_entt, freya::asset_group_get_id(s_app.group_id, "behelit"));
+    s_app.model_entt = freya::entity_create(s_app.world, entt_desc);
+    freya::entity_add_model(s_app.world, s_app.model_entt, freya::asset_group_get_id(s_app.group_id, "behelit"));
   }
 
   // Point light init
@@ -125,8 +125,8 @@ bool app_init(const freya::Args& args, freya::Window* window) {
       .tag = "Ground",
     };
 
-    freya::EntityID ground_entt = freya::entity_create(s_app.world, entt_desc); 
-    freya::entity_add_mesh(s_app.world, ground_entt, mesh_id, material_id);
+    s_app.ground_entt = freya::entity_create(s_app.world, entt_desc); 
+    freya::entity_add_mesh(s_app.world, s_app.ground_entt, mesh_id, material_id);
   }
 
   // Done!

@@ -510,11 +510,16 @@ static void render_queue_mesh(RenderQueue& queue, Camera& camera, MeshComponent&
   entry.model.u_index = (i32)queue.entries.size();
 
   entry.elements_count  = comp.mesh.elements_count;
-  entry.instances_count = 1;
+  entry.instances_count = 1 + (u32)scene.instances.size();
 
-  // Pushing into the queue
+  // Queue up the transforms of the instances alongside the entity's transform
 
   queue.transforms.emplace_back(scene.transform);
+  for(auto& entt : scene.instances) {
+    queue.transforms.emplace_back(entity_get_component<SceneComponent>(*s_renderer.world, entt).transform);
+  }
+  
+  // Pushing into the queue
   queue.entries.push_back(entry);
 
   // Pushing to the shadow queue if possible 
@@ -534,82 +539,17 @@ static void render_queue_mesh(RenderQueue& queue, Camera& camera, MeshComponent&
     shadow_entry.bindings.views[0] = shadow.transforms_view;
 
     shadow_entry.elements_count  = comp.mesh.elements_count;
-    shadow_entry.instances_count = 1;
+    shadow_entry.instances_count = 1 + (u32)scene.instances.size();
 
-    // Pushing into the queue
+    // Queue up the transforms of the instances alongside the entity's transform
 
     shadow.transforms.emplace_back(scene.transform);
-    shadow.entries.push_back(shadow_entry);
-  }
-}
-
-static void render_queue_mesh_instanced(RenderQueue& queue, MeshInstancedComponent& comp) {
-  // Setup the bindings of the entry
-  
-  RenderQueueEntry entry;
-
-  entry.bindings.vertex_buffers[0] = comp.mesh.vertex_buffer; 
-  entry.bindings.index_buffer      = comp.mesh.index_buffer; 
-
-  entry.bindings.views[0] = queue.transforms_view;
-  entry.bindings.views[1] = comp.material.albedo_map.view;
-  entry.bindings.views[2] = comp.material.roughness_map.view;
-  entry.bindings.views[3] = comp.material.metallic_map.view;
-  entry.bindings.views[4] = comp.material.normal_map.view;
-  entry.bindings.views[5] = comp.material.emissive_map.view;
-  entry.bindings.views[6] = s_renderer.passes[RENDER_PASS_SHADOW].attachments[0];
-
-  entry.bindings.samplers[0] = comp.material.albedo_map.sampler;
-  entry.bindings.samplers[1] = comp.material.roughness_map.sampler;
-  entry.bindings.samplers[2] = comp.material.metallic_map.sampler;
-  entry.bindings.samplers[3] = comp.material.normal_map.sampler;
-  entry.bindings.samplers[4] = comp.material.emissive_map.sampler;
-  entry.bindings.samplers[5] = s_renderer.passes[RENDER_PASS_SHADOW].sampler;
-
-  // Setup the material 
-
-  entry.material = {
-    comp.material.color, 
-    comp.material.roughness, 
-    comp.material.metallic,
-    comp.material.emissive,
-  };
-
-  // Fill the rest of the entry
-
-  entry.model.u_index = (i32)queue.entries.size();
-
-  entry.elements_count  = comp.mesh.elements_count;
-  entry.instances_count = (u32)comp.transforms.size();
-
-  // Pushing into the queue
-
-  queue.transforms.insert(queue.transforms.end(), comp.transforms.begin(), comp.transforms.end());
-  queue.entries.push_back(entry);
-
-  // Pushing to the shadow queue if possible 
-
-  if(comp.material.shadows_enabled) {
-    RenderQueue& shadow = s_renderer.queues[RENDER_QUEUE_SHADOW];
-    RenderQueueEntry shadow_entry; 
-
-    // Setup the the entry
-
-    shadow_entry.model.u_index = (i32)shadow.entries.size();
-
-    shadow_entry.bindings                   = {0};
-    shadow_entry.bindings.vertex_buffers[0] = comp.mesh.vertex_buffer; 
-    shadow_entry.bindings.index_buffer      = comp.mesh.index_buffer; 
-
-    shadow_entry.bindings.views[0] = shadow.transforms_view;
-
-    shadow_entry.elements_count  = comp.mesh.elements_count;
-    shadow_entry.instances_count = (u32)comp.transforms.size();
+    for(auto& entt : scene.instances) {
+      shadow.transforms.emplace_back(entity_get_component<SceneComponent>(*s_renderer.world, entt).transform);
+    }
 
     // Pushing into the queue
-
-    shadow.transforms.insert(shadow.transforms.end(), comp.transforms.begin(), comp.transforms.end());
-    shadow.entries.push_back(shadow_entry);
+    shadow.entries.push_back(entry);
   }
 }
 
@@ -858,7 +798,7 @@ void renderer_prepare() {
 
   // Meshes
   {
-    auto view = world->view<SceneComponent, MeshComponent>();
+    auto view = world->view<SceneComponent, MeshComponent>(entt::exclude<InstanceFlag>);
     for(auto& entt : view) {
       // Get the important components
 
@@ -869,22 +809,6 @@ void renderer_prepare() {
 
       // Queue the mesh 
       render_queue_mesh(queue, *main_cam, mesh, scene);
-    }
-  }
-
-  //
-  // Instanced meshes 
-  //
-  {
-    auto view = world->view<MeshInstancedComponent>();
-    for(auto& entt : view) {
-      // Get the imporant components
-
-      MeshInstancedComponent& comp = view.get<MeshInstancedComponent>(entt);
-      RenderQueue& queue           = s_renderer.queues[RENDER_QUEUE_OPAQUE];
-
-      // Queue the instanced mesh
-      render_queue_mesh_instanced(queue, comp);
     }
   }
 
