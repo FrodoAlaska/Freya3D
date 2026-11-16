@@ -510,7 +510,7 @@ static void render_queue_mesh(RenderQueue& queue, Camera& camera, MeshComponent&
   entry.model.u_index = (i32)queue.entries.size();
 
   entry.elements_count  = comp.mesh.elements_count;
-  entry.instances_count = 1 + (u32)scene.instances.size();
+  entry.instances_count = (u32)scene.instances.size() + 1;
 
   // Queue up the transforms of the instances alongside the entity's transform
 
@@ -539,7 +539,7 @@ static void render_queue_mesh(RenderQueue& queue, Camera& camera, MeshComponent&
     shadow_entry.bindings.views[0] = shadow.transforms_view;
 
     shadow_entry.elements_count  = comp.mesh.elements_count;
-    shadow_entry.instances_count = 1 + (u32)scene.instances.size();
+    shadow_entry.instances_count = (u32)scene.instances.size() + 1;
 
     // Queue up the transforms of the instances alongside the entity's transform
 

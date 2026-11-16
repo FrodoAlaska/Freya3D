@@ -8,9 +8,9 @@
 - Renderer
     - [x] Shadows 
     - [] IBL (Image-Based Lighting)
+    - [] Post-process effects (bloom, blur, etc...)
     - [] Ambient occlusion textures
     - [] Frustrum culling (and maybe look into acceleration spatial structures)
-    - [] Post-process effects (bloom, blur, etc...)
     - [] Decals 
     - [] Particles (CPU, but GPU-based is going to be better) 
     - [] Global illumination
