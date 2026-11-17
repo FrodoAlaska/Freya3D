@@ -1,9 +1,6 @@
 # TODO 
 
-## Features We Definitely Need
-
-- Physics 
-    - [] Box3D or Jolt?
+## Important Features
 
 - Renderer
     - [x] Shadows 
@@ -13,16 +10,13 @@
     - [] Frustrum culling (and maybe look into acceleration spatial structures)
     - [] Decals 
     - [] Particles (CPU, but GPU-based is going to be better) 
-    - [] Global illumination
 
-- Animations 
-    - [] Do we implement 3D skeletal animations, or just use billboards for now?
+- Physics 
+    - [] Box3D or Jolt?
 
 ## Immediate 
 
-- Wouldn't be better if we looped over the mesh components with the transforms in the renderer rather than attaching the transform into the component itself and having to update the transform every frame in the entity world?
-
-- Maybe we should just use an sRGB format for color textures instead of decoding and encoding the values in the shader?
+- Empty for now...
 
 ## Issues To Fix 
 
@@ -30,11 +24,7 @@
     - Improve the camera's controller to make it more general a little bit more. Look into the camera controller functions and you'll understand what needs to be fixed.
 
 - Entity/scenes 
-    - Meshes and models should have the loaded names from the disk
     - Instancing an entity is currently very weird
-    - Add an `OcclusionFlag` to any entity that is occluded and cannot be seen by the camera 
-        - This entity will be excluded from being rendered any, even, by the physics engine if possible 
-        - We'll do frsutum culling on each entity that has a mesh component and add said `OcclusionFlag` if it is occluded
 
 - Transforms 
     - Maybe we need to represent transforms differently. 
@@ -45,8 +35,6 @@
 
 - Renderer
     - We should think about the vertex situation. Should we have one unifying vertex type or multiple???
-    - Eventually add cascaded shadow maps
-    - Point light shadows
 
 - 2D UI
     - Maybe have a completely seperate renderer to handle the 2D stuff 
@@ -55,3 +43,16 @@
 - Billboard sprites
     - The rotations of the billboard on the X-axis are flipped for some reason, and I cannot fix them
     - Mabye have a better system for animated billboards that we can use on the GPU side
+
+## Future Plans
+
+- Renderer 
+    - Add cascaded shadow maps
+    - Point light shadows
+    - Global illumination
+
+- Entity/scenes
+    - Meshes and models should have the loaded names from the disk
+
+- Animations 
+    - Do we implement 3D skeletal animations, or just use billboards for now?
