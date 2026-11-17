@@ -74,7 +74,7 @@ bool app_init(const freya::Args& args, freya::Window* window) {
                                         20.0f, 
                                         0.1f);
 
-    freya::entity_add_directional_light(s_app.world, s_app.camera_entt, freya::Vec3(0.0f));
+    freya::entity_add_directional_light(s_app.world, s_app.camera_entt, freya::Vec3(1.0f, -1.0f, 0.0f));
     freya::entity_add_skybox(s_app.world, 
                              s_app.camera_entt, 
                              freya::asset_group_get_id(s_app.group_id, "corona"), 
@@ -97,13 +97,13 @@ bool app_init(const freya::Args& args, freya::Window* window) {
 
   // Point light init
   {
-    freya::EntityDesc entt_desc = {
-      .position = freya::Vec3(10.0f, 0.0f, 10.0f),
-      .tag      = "Point light",
-    };
-
-    freya::EntityID point_light = freya::entity_create(s_app.world, entt_desc);
-    freya::entity_add_point_light(s_app.world, point_light);
+    // freya::EntityDesc entt_desc = {
+    //   .position = freya::Vec3(10.0f, 0.0f, 10.0f),
+    //   .tag      = "Point light",
+    // };
+    //
+    // freya::EntityID point_light = freya::entity_create(s_app.world, entt_desc);
+    // freya::entity_add_point_light(s_app.world, point_light);
   } 
 
   // Ground init
