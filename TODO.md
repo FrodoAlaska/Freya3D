@@ -32,10 +32,13 @@
 - Entity/scenes 
     - Meshes and models should have the loaded names from the disk
     - Instancing an entity is currently very weird
+    - Add an `OcclusionFlag` to any entity that is occluded and cannot be seen by the camera 
+        - This entity will be excluded from being rendered any, even, by the physics engine if possible 
+        - We'll do frsutum culling on each entity that has a mesh component and add said `OcclusionFlag` if it is occluded
 
 - Transforms 
     - Maybe we need to represent transforms differently. 
-    - Instead of quats on the front end, we just use simple euler angles, and then calculate quats on the backend.
+        - Instead of quats on the front end, we just use simple euler angles, and then calculate quats on the backend.
 
 - Asset file watchers
     - They are shit. Fix 'em 

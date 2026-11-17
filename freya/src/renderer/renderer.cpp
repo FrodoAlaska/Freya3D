@@ -471,9 +471,6 @@ static void init_queues() {
 }
 
 static void render_queue_mesh(RenderQueue& queue, Camera& camera, MeshComponent& comp, SceneComponent& scene) {
-  // @TODO (Renderer/frustum culling):
-  // Do some frustum culling here...
-
   // Setup the bindings of the entry
   
   RenderQueueEntry entry;
@@ -798,7 +795,7 @@ void renderer_prepare() {
 
   // Meshes
   {
-    auto view = world->view<SceneComponent, MeshComponent>(entt::exclude<InstanceFlag>);
+    auto view = world->view<SceneComponent, MeshComponent>(entt::exclude<InstanceFlag, OcclusionFlag>);
     for(auto& entt : view) {
       // Get the important components
 

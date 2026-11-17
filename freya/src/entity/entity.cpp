@@ -32,8 +32,24 @@ void entity_world_update(EntityWorld& world, const f32 delta_time) {
   {
     FREYA_PROFILE_FUNCTION_NAMED("entity_world_update(SceneComponent)");
 
+    // Get the main camera
+
+    Camera* main_cam = nullptr;
+    auto cam_view    = world.view<Camera>();
+
+    for(auto entt : cam_view) {
+      main_cam = &cam_view.get<Camera>(entt);
+      break;
+    }
+
+    // Go through each scene component to calculate the transform hierarchy
+
     auto view = world.view<SceneComponent, Transform>();
     for(auto entt : view) {
+      // 
+      // Calculat the transform 
+      //
+
       // Get the required components
 
       SceneComponent& scene = view.get<SceneComponent>(entt); 
@@ -66,6 +82,25 @@ void entity_world_update(EntityWorld& world, const f32 delta_time) {
       }
       else {
         scene.transform = transform_apply(transform);
+      }
+
+      // 
+      // Frustum culling 
+      //
+       
+      // We have a valid camera? 
+
+      if(!main_cam) {
+        continue;
+      }
+
+      // Check against the entity's bounds
+    
+      if(camera_check_bounds(*main_cam, scene.bounds)) {
+        entity_add_or_replace_component<OcclusionFlag>(world, entt); 
+      }
+      else {
+        world.remove<OcclusionFlag>(entt);
       }
     }
   } 
@@ -352,9 +387,19 @@ MeshComponent& entity_add_mesh(EntityWorld& world,
                                EntityID& entt, 
                                const AssetID& mesh_id, 
                                const AssetID& material_id) {
+  // Get the required assets
+
   const Material& default_mat = renderer_get_defaults().material; 
+  Mesh& mesh                  = asset_group_get_mesh(mesh_id);
+
+  // Update the scene's bounds 
+
+  SceneComponent& scene = entity_get_component<SceneComponent>(world, entt);
+  scene.bounds          = mesh.bounds;
+
+  // Done!
   return world.emplace<MeshComponent>(entt, 
-                                      asset_group_get_mesh(mesh_id), 
+                                      mesh, 
                                       (material_id.is_valid() ? asset_group_get_material(material_id) : default_mat));
 }
 
@@ -399,6 +444,11 @@ BillboardComponent& entity_add_billboard(EntityWorld& world,
   if(texture_id.get_id() != ASSET_ID_INVALID) {
     texture = asset_group_get_texture(texture_id);
   }
+
+  // Update the scene's bounds 
+
+  SceneComponent& scene = entity_get_component<SceneComponent>(world, entt);
+  scene.bounds          = renderer_get_defaults().billboard_mesh.bounds;
   
   // Done!
   return world.emplace<BillboardComponent>(entt, texture);

@@ -62,6 +62,20 @@ struct InstanceFlag {
 /// ----------------------------------------------------------------------
 
 /// ----------------------------------------------------------------------
+/// OcclusionFlag
+struct OcclusionFlag {
+  // 
+  // @NOTE: 
+  //
+  // Contains nothing except a dummy value, but is given 
+  // to entities that are occluded and cannot be seen by the camera.
+  //
+  i32 __dummy = 0;
+};
+/// OcclusionFlag
+/// ----------------------------------------------------------------------
+
+/// ----------------------------------------------------------------------
 /// EntityDesc
 struct EntityDesc {
   Vec3 position = Vec3(0.0f);
@@ -82,7 +96,8 @@ struct SceneComponent {
   EntityID parent = ENTITY_NULL;
   DynamicArray<EntityID> instances; 
   
-  Mat4 transform = Mat4(1.0f);
+  Mat4 transform     = Mat4(1.0f);
+  BoundingBox bounds = {};
 };
 /// SceneComponent
 /// ----------------------------------------------------------------------
@@ -195,6 +210,13 @@ FREYA_API void entity_destroy(EntityWorld& world, EntityID& entt);
 template<typename Comp, typename... Args>
 FREYA_API Comp& entity_add_component(EntityWorld& world, EntityID& entt, Args&&... args) {
   return world.emplace<Comp>(entt, std::forward<Args>(args)...);
+}
+
+/// Add or replace a generic component `Comp` with `Args` initialization arguments 
+/// to the given `entt` in the respective `world`.
+template<typename Comp, typename... Args>
+FREYA_API Comp& entity_add_or_replace_component(EntityWorld& world, EntityID& entt, Args&&... args) {
+  return world.emplace_or_replace<Comp>(entt, std::forward<Args>(args)...);
 }
 
 /// A helper function to add a camera to `entt`, using the information in `desc`.
