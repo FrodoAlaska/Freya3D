@@ -4,7 +4,11 @@
 #include "freya_entity.h"
 
 #include "passes/render_passes.h"
-#include "shaders/default_pass_shader.h"
+
+#include "shaders/billboard_shader.h"
+#include "shaders/prefilter_shader.h"
+#include "shaders/screen_space_shader.h"
+#include "shaders/skybox_shader.h"
 
 #include "fontstash/fontstash.h"
 

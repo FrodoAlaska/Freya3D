@@ -3,10 +3,6 @@
 #include "freya_render.h"
 
 #include "../shaders/main_shader.h"
-#include "../shaders/billboard_shader.h"
-#include "../shaders/screen_space_shader.h"
-#include "../shaders/skybox_shader.h"
-#include "../shaders/prefilter_shader.h"
 
 //////////////////////////////////////////////////////////////////////////
 
