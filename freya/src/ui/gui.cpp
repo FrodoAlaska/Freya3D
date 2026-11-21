@@ -312,6 +312,8 @@ void gui_debug_info() {
   {
     if(ImGui::CollapsingHeader("Renderer")) {
       // Clear color
+      
+      ImGui::SeparatorText("Color settings");
 
       Vec4 clear_color = renderer_get_clear_color();
       bool is_picked   = ImGui::ColorEdit4("Clear color", &clear_color[0]);
@@ -321,10 +323,21 @@ void gui_debug_info() {
       }
 
       // Gamma 
+      
+      ImGui::SeparatorText("Gamma settings");
 
       f32 gamma = renderer_get_gamma();
-      if(ImGui::DragFloat("Gamma", &gamma, s_gui.small_step, 1.0f, 2.6f)) {
+      if(ImGui::DragFloat("Value", &gamma, s_gui.small_step, 1.0f, 2.6f)) {
         renderer_set_gamma(gamma);
+      }
+
+      // Bloom
+     
+      ImGui::SeparatorText("Bloom settings");
+
+      f32 intensity = renderer_get_bloom_intensity();
+      if(ImGui::DragFloat("Intensity", &intensity, 0.01f, 0.0f)) {
+        renderer_set_bloom_intensity(intensity);
       }
     }
   }
@@ -557,7 +570,7 @@ void gui_edit_mesh_component(const char* name, MeshComponent* mesh) {
 
   ImGui::SliderFloat("Roughness intensity", &material.roughness, 0.0f, 1.0f, "Roughness intensity: %.3f");
   ImGui::SliderFloat("Metallic intensity", &material.metallic, 0.01f, 1.0f, "Metallic intensity: %.3f");
-  ImGui::SliderFloat("Emissive intensity", &material.emissive, 0.01f, 256.0f, "Emissive intensity: %.3f");
+  ImGui::DragFloat("Emissive intensity", &material.emissive, 0.01f, 0.0f);
 
   ImGui::Checkbox("Shadows enabled", &material.shadows_enabled);
 

@@ -4,7 +4,7 @@
 
 - Renderer
     - [x] Shadows 
-    - [] Post-process effects (bloom, blur, etc...)
+    - [x] Post-process effects (bloom, blur, etc...)
     - [] Frustrum culling (and maybe look into acceleration spatial structures)
     - [] IBL (Image-Based Lighting)
 

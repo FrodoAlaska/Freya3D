@@ -1,5 +1,7 @@
 #include "render_passes.h"
 
+#include "../shaders/screen_space_shader.h"
+
 //////////////////////////////////////////////////////////////////////////
 
 namespace freya { // Start of freya
@@ -37,7 +39,7 @@ void default_pass_commit(RenderPass& pass, RenderQueue& queue, Window* window, c
   RenderQueueEntry& entry = queue.entries[0];
   
   sg_apply_bindings(entry.bindings);
-  sg_draw(0, entry.elements_count, 1);
+  sg_draw(0, 3, 1);
 
   // Done!
   sg_end_pass();  

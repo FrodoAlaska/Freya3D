@@ -19,6 +19,7 @@ layout(binding = 0) uniform FrameData {
 
   float u_gamma; 
   float u_exposure;
+  float u_bloom_intensity;
 };
 
 void main() {

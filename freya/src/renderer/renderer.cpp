@@ -6,7 +6,7 @@
 #include "passes/render_passes.h"
 
 #include "shaders/billboard_shader.h"
-#include "shaders/prefilter_shader.h"
+#include "shaders/bloom_shader.h"
 #include "shaders/screen_space_shader.h"
 #include "shaders/skybox_shader.h"
 
@@ -26,7 +26,8 @@ enum ShaderID {
   SHADER_SHADOW,
   SHADER_LIGHTING,
   SHADER_BILLBOARD,
-  SHADER_PREFILTER,
+  SHADER_DOWNSCALE,
+  SHADER_UPSCALE,
   SHADER_SCREEN_SPACE,
   SHADER_SKYBOX,
 
@@ -271,7 +272,8 @@ static void init_shaders() {
     shadow_pass_shader_desc(backend),
     lighting_pass_shader_desc(backend),
     bb_billboard_pass_shader_desc(backend),
-    pf_prefilter_shader_desc(backend),
+    downscale_shader_desc(backend),
+    upscale_shader_desc(backend),
     screen_space_shader_desc(backend),
     sk_skybox_shader_desc(backend),
   };
@@ -437,7 +439,7 @@ static void init_queues() {
   }
  
   //
-  // Pre-filter queue init 
+  // Downscale queue init 
   //
   {
     sg_pipeline_desc pipe_desc = {};
@@ -445,16 +447,37 @@ static void init_queues() {
     pipe_desc.depth.write_enabled = true;
     pipe_desc.depth.pixel_format  = SG_PIXELFORMAT_NONE;
 
-    pipe_desc.shader       = asset_group_get_shader(s_renderer.shaders[SHADER_PREFILTER]); 
+    pipe_desc.shader       = asset_group_get_shader(s_renderer.shaders[SHADER_DOWNSCALE]); 
     pipe_desc.sample_count = window_get_samples_count(s_renderer.window);
-
-    pipe_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT2; // Position
-    pipe_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT2; // Texture coords
     
     pipe_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA16F;
-    pipe_desc.index_type             = SG_INDEXTYPE_UINT16;
 
-    s_renderer.queues[RENDER_QUEUE_PREFILTER].pipeline = sg_make_pipeline(pipe_desc);
+    s_renderer.queues[RENDER_QUEUE_DOWNSCALE].pipeline = sg_make_pipeline(pipe_desc);
+  }
+  
+  //
+  // Upscale queue init 
+  //
+  {
+    sg_pipeline_desc pipe_desc = {};
+    
+    pipe_desc.depth.write_enabled = true;
+    pipe_desc.depth.pixel_format  = SG_PIXELFORMAT_NONE;
+
+    pipe_desc.shader       = asset_group_get_shader(s_renderer.shaders[SHADER_UPSCALE]); 
+    pipe_desc.sample_count = window_get_samples_count(s_renderer.window);
+   
+    pipe_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA16F;
+
+    pipe_desc.colors[0].blend.enabled = true;
+    
+    pipe_desc.colors[0].blend.src_factor_rgb = SG_BLENDFACTOR_ONE;
+    pipe_desc.colors[0].blend.dst_factor_rgb = SG_BLENDFACTOR_ONE;
+    
+    pipe_desc.colors[0].blend.src_factor_alpha = SG_BLENDFACTOR_ONE;
+    pipe_desc.colors[0].blend.dst_factor_alpha = SG_BLENDFACTOR_ONE;
+
+    s_renderer.queues[RENDER_QUEUE_UPSCALE].pipeline = sg_make_pipeline(pipe_desc);
   }
  
   //
@@ -465,11 +488,6 @@ static void init_queues() {
 
     pipe_desc.shader       = asset_group_get_shader(s_renderer.shaders[SHADER_SCREEN_SPACE]); 
     pipe_desc.sample_count = window_get_samples_count(s_renderer.window);
-
-    pipe_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT2; // Position
-    pipe_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT2; // Texture coords
-
-    pipe_desc.index_type = SG_INDEXTYPE_UINT16;
 
     s_renderer.queues[RENDER_QUEUE_SCREEN_SPACE].pipeline = sg_make_pipeline(pipe_desc);
   }
@@ -635,9 +653,10 @@ void renderer_init(Window* window) {
   init_shaders();
   init_queues();
   
-  s_renderer.frame_data.u_ambient_color = Vec3(1.0f);
-  s_renderer.frame_data.u_gamma         = 2.2f;
-  s_renderer.frame_data.u_exposure      = 1.0f;
+  s_renderer.frame_data.u_ambient_color   = Vec3(1.0f);
+  s_renderer.frame_data.u_gamma           = 2.2f;
+  s_renderer.frame_data.u_exposure        = 1.0f;
+  s_renderer.frame_data.u_bloom_intensity = 0.04f;
 
   s_renderer.dir_light.direction = Vec3(0.0f);
   s_renderer.dir_light.color     = Vec3(1.0f);
@@ -648,7 +667,7 @@ void renderer_init(Window* window) {
 
   shadow_pass_init(s_renderer.passes[RENDER_PASS_SHADOW], s_renderer.window, IVec2(2048));
   geometry_pass_init(s_renderer.passes[RENDER_PASS_GEOMETRY], s_renderer.window);
-  prefilter_pass_init(s_renderer.passes[RENDER_PASS_PREFILTER], s_renderer.window);
+  bloom_pass_init(s_renderer.passes[RENDER_PASS_BLOOM], s_renderer.window);
 
   // Listen to events
    
@@ -689,12 +708,20 @@ void renderer_set_gamma(f32 gamma) {
   s_renderer.frame_data.u_gamma = gamma;
 }
 
+void renderer_set_bloom_intensity(f32 intensity) {
+  s_renderer.frame_data.u_bloom_intensity = intensity;
+}
+
 const Color& renderer_get_clear_color() {
   return s_renderer.color;
 }
 
 f32 renderer_get_gamma() {
   return s_renderer.frame_data.u_gamma;
+}
+
+f32 renderer_get_bloom_intensity() {
+  return s_renderer.frame_data.u_bloom_intensity;
 }
 
 f32 renderer_get_aspect_ratio() {
@@ -876,35 +903,13 @@ void renderer_prepare() {
       billboard.entries.push_back(entry);
     }
   }
-
-  // 
-  // Fill the pre-filter queue
-  //
-  {
-    RenderPass& geo_pass = s_renderer.passes[RENDER_PASS_GEOMETRY];
-    RenderQueue& queue   = s_renderer.queues[RENDER_QUEUE_PREFILTER];
-
-    // Use the final texture image of the current pass
-
-    sg_bindings bind = {};
-
-    bind.views[0] = geo_pass.attachments[0];
-
-    bind.vertex_buffers[0] = s_renderer.defaults.quad_mesh.vertex_buffer;
-    bind.index_buffer      = s_renderer.defaults.quad_mesh.index_buffer;
-    
-    bind.samplers[0] = geo_pass.sampler;
-
-    // Pushing into the queue
-    queue.entries.emplace_back(bind, 6);
-  }
-
+  
   // 
   // Fill the screen-space queue
   //
   {
-    RenderPass& prefilter_pass = s_renderer.passes[RENDER_PASS_PREFILTER];
-    RenderPass& geo_pass       = s_renderer.passes[RENDER_PASS_GEOMETRY];
+    RenderPass& bloom_pass = s_renderer.passes[RENDER_PASS_BLOOM];
+    RenderPass& geo_pass   = s_renderer.passes[RENDER_PASS_GEOMETRY];
     
     RenderQueue& queue = s_renderer.queues[RENDER_QUEUE_SCREEN_SPACE];
 
@@ -912,13 +917,10 @@ void renderer_prepare() {
 
     sg_bindings bind = {};
 
-    bind.views[0] = prefilter_pass.attachments[0];
+    bind.views[0] = bloom_pass.attachments[0];
     bind.views[1] = geo_pass.attachments[0];
-
-    bind.vertex_buffers[0] = s_renderer.defaults.quad_mesh.vertex_buffer;
-    bind.index_buffer      = s_renderer.defaults.quad_mesh.index_buffer;
     
-    bind.samplers[0] = prefilter_pass.sampler;
+    bind.samplers[0] = bloom_pass.sampler;
     bind.samplers[1] = geo_pass.sampler;
 
     // Pushing into the queue
@@ -953,11 +955,13 @@ void renderer_commit() {
   };
   geometry_pass_commit(s_renderer.passes[RENDER_PASS_GEOMETRY], geo_data);
 
-  // Pre-filter... 
+  // Bloom... 
 
-  prefilter_pass_commit(s_renderer.passes[RENDER_PASS_PREFILTER], 
-                        s_renderer.queues[RENDER_QUEUE_PREFILTER], 
-                        s_renderer.window);
+  bloom_pass_commit(s_renderer.passes[RENDER_PASS_BLOOM], 
+                    s_renderer.passes[RENDER_PASS_GEOMETRY].attachments[0],
+                    s_renderer.queues[RENDER_QUEUE_DOWNSCALE], 
+                    s_renderer.queues[RENDER_QUEUE_UPSCALE], 
+                    s_renderer.window);
 
   // Default...
   

@@ -113,11 +113,17 @@ FREYA_API void renderer_set_clear_color(const Color& color);
 /// Set renderer's gamma to the given `gamma`.
 FREYA_API void renderer_set_gamma(f32 gamma);
 
+/// Set renderer's bloom intensity to the given `intensity`.
+FREYA_API void renderer_set_bloom_intensity(f32 intensity);
+
 /// Retrieve the renderer's current clear color.
 FREYA_API const Color& renderer_get_clear_color();
 
 /// Retrieve renderer's current gamma value.
 FREYA_API f32 renderer_get_gamma();
+
+/// Retrieve renderer's current bloom intensity value.
+FREYA_API f32 renderer_get_bloom_intensity();
 
 /// Retrieve renderer's current aspect ratio.
 FREYA_API f32 renderer_get_aspect_ratio();

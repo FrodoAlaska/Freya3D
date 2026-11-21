@@ -806,6 +806,7 @@ AssetID asset_group_push_texture(const AssetGroupID& group_id, const MaterialTex
     case MATERIAL_TEXTURE_ALBEDO: 
     case MATERIAL_TEXTURE_ROUGHNESS: 
     case MATERIAL_TEXTURE_METALLIC: 
+    case MATERIAL_TEXTURE_EMISSIVE: 
       memory_set(pixels, 0xffffffff, sizeof(pixels));
       break;
     case MATERIAL_TEXTURE_NORMAL: {
@@ -826,9 +827,6 @@ AssetID asset_group_push_texture(const AssetGroupID& group_id, const MaterialTex
         }
       }
     } break;
-    case MATERIAL_TEXTURE_EMISSIVE: 
-      memory_set(pixels, 0x00000000, sizeof(pixels));
-      break;
   }
 
   img_desc.data.mip_levels[0] = SG_RANGE(pixels);

@@ -28,7 +28,7 @@ const u32 POINT_LIGHTS_MAX       = 16;
 enum RenderPassID {
   RENDER_PASS_SHADOW, 
   RENDER_PASS_GEOMETRY,
-  RENDER_PASS_PREFILTER,
+  RENDER_PASS_BLOOM,
   RENDER_PASS_DEFAULT,
 
   RENDER_PASSSES_COUNT,
@@ -42,8 +42,11 @@ enum RenderQueueID {
   RENDER_QUEUE_SHADOW,
   RENDER_QUEUE_OPAQUE, 
   RENDER_QUEUE_BILLBOARD,
+
+  RENDER_QUEUE_DOWNSCALE,
+  RENDER_QUEUE_UPSCALE,
   RENDER_QUEUE_SCREEN_SPACE,
-  RENDER_QUEUE_PREFILTER,
+
   RENDER_QUEUE_SKYBOX,
 
   RENDER_QUEUES_COUNT,
@@ -110,7 +113,9 @@ struct GeometryPassData {
 /// Shadow pass functions
 
 void shadow_pass_init(RenderPass& pass, Window* window, const IVec2& shadow_size = IVec2(1024));
+
 void shadow_pass_prepare(RenderPass& pass, const Camera& camera, const DirectionalLightComponent& light, Mat4& out_mat);
+
 void shadow_pass_commit(RenderPass& pass, RenderQueue& queue, FrameData_t& frame_data);
 
 /// Shadow pass functions
@@ -120,18 +125,24 @@ void shadow_pass_commit(RenderPass& pass, RenderQueue& queue, FrameData_t& frame
 /// Geometry pass functions
 
 void geometry_pass_init(RenderPass& pass, Window* window);
+
 void geometry_pass_commit(RenderPass& pass, const GeometryPassData& data);
 
 /// Geometry pass functions
 ///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------
-/// Pre-filter pass functions
+/// Bloom pass functions
 
-void prefilter_pass_init(RenderPass& pass, Window* window);
-void prefilter_pass_commit(RenderPass& pass, RenderQueue& queue, Window* window);
+void bloom_pass_init(RenderPass& pass, Window* window);
 
-/// Pre-filter pass functions
+void bloom_pass_commit(RenderPass& pass, 
+                       sg_view input_view,
+                       RenderQueue& downscale_queue, 
+                       RenderQueue& upscale_queue, 
+                       Window* window);
+
+/// Bloom pass functions
 ///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------

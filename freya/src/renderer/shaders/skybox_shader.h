@@ -49,7 +49,8 @@ SOKOL_SHDC_ALIGN(16) typedef struct sk_FrameData_t {
     float u_ambient_color[3];
     float u_gamma;
     float u_exposure;
-    uint8_t _pad_228[12];
+    float u_bloom_intensity;
+    uint8_t _pad_232[8];
 } sk_FrameData_t;
 #pragma pack(pop)
 /*

@@ -10,15 +10,10 @@
 /// --------------------------------------------------
 
 /// --------------------------------------------------
-/// Blocks
+/// Vertex shader
 
 @module screen
 @vs vs
-
-// Inputs
-
-in vec2 a_pos;
-in vec2 a_tex_coords;
 
 // Outputs
 
@@ -26,6 +21,7 @@ out vec2 o_tex_coords;
 
 out float o_gamma; 
 out float o_exposure;
+out float o_bloom_intensity;
 
 layout(binding = 0) uniform FrameData {
   mat4 u_view;
@@ -37,22 +33,27 @@ layout(binding = 0) uniform FrameData {
 
   float u_gamma;
   float u_exposure;
+  float u_bloom_intensity;
 };
 
-/// Blocks
-/// --------------------------------------------------
-
-/// --------------------------------------------------
-/// Vertex shader
+// Main
 
 void main() {
-  o_tex_coords = a_tex_coords;
+  // Generate a UV from the vertex 
+  vec2 uv = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2); 
   
-  o_gamma    = u_gamma; 
-  o_exposure = u_exposure;
+  // Carry the outputs over
+  
+  o_tex_coords = uv;
 
-  gl_Position  = vec4(a_pos, 0.0, 1.0);
+  o_gamma           = u_gamma;
+  o_exposure        = u_exposure;
+  o_bloom_intensity = u_bloom_intensity;
+
+  // Done!
+  gl_Position = vec4(vec2(uv * 2.0 - 1.0), 0.0, 1.0);
 }
+
 @end
 
 /// Vertex shader
@@ -69,8 +70,9 @@ in vec2 o_tex_coords;
 
 in float o_gamma; 
 in float o_exposure;
+in float o_bloom_intensity;
 
-// Uniforms 
+// Textures 
 
 layout(binding = 0) uniform texture2D u_bloom_texture; 
 layout(binding = 0) uniform sampler u_bloom_sampler; 
@@ -104,9 +106,9 @@ void main() {
   // Sample the main textures
 
   vec3 bloom_texel = texture(sampler2D(u_bloom_texture, u_bloom_sampler), o_tex_coords).rgb;
-  vec3 scene_texel = texture(sampler2D(u_scene_texture, u_scene_sampler), o_tex_coords).rgb * exp2(o_exposure);
+  vec3 scene_texel = texture(sampler2D(u_scene_texture, u_scene_sampler), o_tex_coords).rgb;
 
-  vec3 result = mix(scene_texel, bloom_texel, 0.05); // Mix the scene and the bloom textures
+  vec3 result = mix(scene_texel, bloom_texel, o_bloom_intensity) * exp2(o_exposure); // Mix the scene and the bloom textures
   
   // Apply some tone-mapping
   vec3 toned = tonemap_aces(result);

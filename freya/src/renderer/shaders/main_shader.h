@@ -145,7 +145,8 @@ SOKOL_SHDC_ALIGN(16) typedef struct FrameData_t {
     freya::Vec3 u_ambient_color;
     float u_gamma;
     float u_exposure;
-    uint8_t _pad_228[12];
+    float u_bloom_intensity;
+    uint8_t _pad_232[8];
 } FrameData_t;
 #pragma pack(pop)
 #pragma pack(push,1)
