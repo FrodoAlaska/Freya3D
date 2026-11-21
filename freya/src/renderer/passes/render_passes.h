@@ -6,6 +6,7 @@
 #include "../shaders/billboard_shader.h"
 #include "../shaders/screen_space_shader.h"
 #include "../shaders/skybox_shader.h"
+#include "../shaders/prefilter_shader.h"
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -31,6 +32,7 @@ const u32 POINT_LIGHTS_MAX       = 16;
 enum RenderPassID {
   RENDER_PASS_SHADOW, 
   RENDER_PASS_GEOMETRY,
+  RENDER_PASS_PREFILTER,
   RENDER_PASS_DEFAULT,
 
   RENDER_PASSSES_COUNT,
@@ -45,6 +47,7 @@ enum RenderQueueID {
   RENDER_QUEUE_OPAQUE, 
   RENDER_QUEUE_BILLBOARD,
   RENDER_QUEUE_SCREEN_SPACE,
+  RENDER_QUEUE_PREFILTER,
   RENDER_QUEUE_SKYBOX,
 
   RENDER_QUEUES_COUNT,
@@ -124,6 +127,15 @@ void geometry_pass_init(RenderPass& pass, Window* window);
 void geometry_pass_commit(RenderPass& pass, const GeometryPassData& data);
 
 /// Geometry pass functions
+///---------------------------------------------------------------------------------------------------------------------
+
+///---------------------------------------------------------------------------------------------------------------------
+/// Pre-filter pass functions
+
+void prefilter_pass_init(RenderPass& pass, Window* window);
+void prefilter_pass_commit(RenderPass& pass, RenderQueue& queue, Window* window);
+
+/// Pre-filter pass functions
 ///---------------------------------------------------------------------------------------------------------------------
 
 ///---------------------------------------------------------------------------------------------------------------------

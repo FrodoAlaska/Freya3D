@@ -4,12 +4,9 @@
 
 - Renderer
     - [x] Shadows 
-    - [] IBL (Image-Based Lighting)
     - [] Post-process effects (bloom, blur, etc...)
-    - [] Ambient occlusion textures
     - [] Frustrum culling (and maybe look into acceleration spatial structures)
-    - [] Decals 
-    - [] Particles (CPU, but GPU-based is going to be better) 
+    - [] IBL (Image-Based Lighting)
 
 - Physics 
     - [] Box3D or Jolt?
@@ -47,12 +44,20 @@
 ## Future Plans
 
 - Renderer 
-    - Add cascaded shadow maps
-    - Point light shadows
-    - Global illumination
+    - [PRIORITY: HIGH] - Particles (CPU, but GPU-based is going to be better) 
+    - [PRIORITY: HIGH] - Decals 
+    - [PRIORITY: HIGH] - Ambient occlusion textures
 
+    - [PRIORITY: MEDIUM] - Global illumination
+    
+    - [PRIORITY: LOW] - Add cascaded shadow maps
+    - [PRIORITY: LOW] - Point light shadows
+      
 - Entity/scenes
     - Meshes and models should have the loaded names from the disk
 
 - Animations 
     - Do we implement 3D skeletal animations, or just use billboards for now?
+
+- Multi-threading
+    - ???

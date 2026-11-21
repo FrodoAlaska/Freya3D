@@ -61,6 +61,7 @@ set(FREYA_SOURCES
   # Renderer/passes
   ${FREYA_SRC_DIR}/renderer/passes/shadow_pass.cpp
   ${FREYA_SRC_DIR}/renderer/passes/geometry_pass.cpp
+  ${FREYA_SRC_DIR}/renderer/passes/prefilter_pass.cpp
   ${FREYA_SRC_DIR}/renderer/passes/default_pass.cpp
   
   # Entity

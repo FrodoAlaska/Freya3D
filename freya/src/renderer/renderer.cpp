@@ -22,6 +22,7 @@ enum ShaderID {
   SHADER_SHADOW,
   SHADER_LIGHTING,
   SHADER_BILLBOARD,
+  SHADER_PREFILTER,
   SHADER_SCREEN_SPACE,
   SHADER_SKYBOX,
 
@@ -200,12 +201,12 @@ static void init_defaults() {
     };
 
     u16 indices[] = {
-      0, 1, 2,  
-      0, 2, 3,
-      6, 5, 4, 
-      7, 6, 4,
-      8, 9, 10,  
-      8, 10, 11,
+      0,  1,  2,  
+      0,  2,  3,
+      6,  5,  4, 
+      7,  6,  4,
+      8,  9,  10,  
+      8,  10, 11,
       14, 13, 12,  
       15, 14, 12,
       16, 17, 18,  
@@ -266,6 +267,7 @@ static void init_shaders() {
     shadow_pass_shader_desc(backend),
     lighting_pass_shader_desc(backend),
     bb_billboard_pass_shader_desc(backend),
+    pf_prefilter_shader_desc(backend),
     screen_space_shader_desc(backend),
     sk_skybox_shader_desc(backend),
   };
@@ -428,6 +430,27 @@ static void init_queues() {
   
     queue.transforms_buffer = inst_buffer;
     queue.transforms_view   = inst_view;
+  }
+ 
+  //
+  // Pre-filter queue init 
+  //
+  {
+    sg_pipeline_desc pipe_desc = {};
+    
+    pipe_desc.depth.write_enabled = true;
+    pipe_desc.depth.pixel_format  = SG_PIXELFORMAT_NONE;
+
+    pipe_desc.shader       = asset_group_get_shader(s_renderer.shaders[SHADER_PREFILTER]); 
+    pipe_desc.sample_count = window_get_samples_count(s_renderer.window);
+
+    pipe_desc.layout.attrs[0].format = SG_VERTEXFORMAT_FLOAT2; // Position
+    pipe_desc.layout.attrs[1].format = SG_VERTEXFORMAT_FLOAT2; // Texture coords
+    
+    pipe_desc.colors[0].pixel_format = SG_PIXELFORMAT_RGBA16F;
+    pipe_desc.index_type             = SG_INDEXTYPE_UINT16;
+
+    s_renderer.queues[RENDER_QUEUE_PREFILTER].pipeline = sg_make_pipeline(pipe_desc);
   }
  
   //
@@ -621,6 +644,7 @@ void renderer_init(Window* window) {
 
   shadow_pass_init(s_renderer.passes[RENDER_PASS_SHADOW], s_renderer.window, IVec2(2048));
   geometry_pass_init(s_renderer.passes[RENDER_PASS_GEOMETRY], s_renderer.window);
+  prefilter_pass_init(s_renderer.passes[RENDER_PASS_PREFILTER], s_renderer.window);
 
   // Listen to events
    
@@ -841,7 +865,7 @@ void renderer_prepare() {
       
       entry.elements_count  = mesh.elements_count;
       entry.instances_count = 1;
-     
+       
       // Pushing into the queue
       
       billboard.transforms.emplace_back(scene.transform);
@@ -850,22 +874,48 @@ void renderer_prepare() {
   }
 
   // 
-  // Fill the screen-space queue 
+  // Fill the pre-filter queue
   //
   {
-    RenderPass& current_pass = s_renderer.passes[RENDER_PASS_DEFAULT - 1];
-    RenderQueue& queue       = s_renderer.queues[RENDER_QUEUE_SCREEN_SPACE];
+    RenderPass& geo_pass = s_renderer.passes[RENDER_PASS_GEOMETRY];
+    RenderQueue& queue   = s_renderer.queues[RENDER_QUEUE_PREFILTER];
 
     // Use the final texture image of the current pass
 
     sg_bindings bind = {};
 
-    bind.views[0] = current_pass.attachments[0];
+    bind.views[0] = geo_pass.attachments[0];
 
     bind.vertex_buffers[0] = s_renderer.defaults.quad_mesh.vertex_buffer;
     bind.index_buffer      = s_renderer.defaults.quad_mesh.index_buffer;
     
-    bind.samplers[0] = current_pass.sampler;
+    bind.samplers[0] = geo_pass.sampler;
+
+    // Pushing into the queue
+    queue.entries.emplace_back(bind, 6);
+  }
+
+  // 
+  // Fill the screen-space queue
+  //
+  {
+    RenderPass& prefilter_pass = s_renderer.passes[RENDER_PASS_PREFILTER];
+    RenderPass& geo_pass       = s_renderer.passes[RENDER_PASS_GEOMETRY];
+    
+    RenderQueue& queue = s_renderer.queues[RENDER_QUEUE_SCREEN_SPACE];
+
+    // Use the final texture image of the current pass
+
+    sg_bindings bind = {};
+
+    bind.views[0] = prefilter_pass.attachments[0];
+    bind.views[1] = geo_pass.attachments[0];
+
+    bind.vertex_buffers[0] = s_renderer.defaults.quad_mesh.vertex_buffer;
+    bind.index_buffer      = s_renderer.defaults.quad_mesh.index_buffer;
+    
+    bind.samplers[0] = prefilter_pass.sampler;
+    bind.samplers[1] = geo_pass.sampler;
 
     // Pushing into the queue
     queue.entries.emplace_back(bind, 6);
@@ -898,7 +948,13 @@ void renderer_commit() {
     .dir_light    = s_renderer.dir_light,
   };
   geometry_pass_commit(s_renderer.passes[RENDER_PASS_GEOMETRY], geo_data);
-  
+
+  // Pre-filter... 
+
+  prefilter_pass_commit(s_renderer.passes[RENDER_PASS_PREFILTER], 
+                        s_renderer.queues[RENDER_QUEUE_PREFILTER], 
+                        s_renderer.window);
+
   // Default...
   
   default_pass_commit(s_renderer.passes[RENDER_PASS_DEFAULT], 
